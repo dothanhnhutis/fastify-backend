@@ -1,47 +1,34 @@
-import fastify from "fastify";
+import fastify, {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+} from "fastify";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
-
 import appRoutes from "@/modules";
 import config from "./config";
-import logger from "./logger";
-import { Logger } from "winston";
+import { loggerPlugin } from "./plugins/logger";
 
 declare module "fastify" {
   export interface FastifyInstance {}
-  export interface FastifyRequest {
-    // winstion: Logger;
-  }
+  export interface FastifyRequest {}
+}
+
+async function aaa(server: FastifyInstance) {
+  server.addHook(
+    "onRequest",
+    async (req: FastifyRequest, reply: FastifyReply, done: Fastify) => {
+      console.log("first");
+    }
+  );
 }
 
 export function buildServer() {
   const server = fastify({
-    logger: {
-      level: "info",
-      redact
-      stream: {
-        write(msg) {
-          console.log(msg);
-          logger.log("info", "test");
-          try {
-            const logObj = JSON.parse(msg) as { [index: string]: string };
-            logger.log(logObj.level, logObj.msg, logObj);
-          } catch (err) {
-            //   logger.info(msg.trim());
-          }
-        },
-      },
-    },
+    logger: false,
+    trustProxy: true,
   });
-
-  // Logger
-  //   server.decorate("winston", logger);
-  //   server.register(async function (fastify, opts) {
-  //     fastify.addHook("onRequest", async (request, reply) => {
-  //       request.winstion = logger;
-  //     });
-  //   });
 
   server.register(fastifyHelmet);
   server.register(fastifyCors, {
@@ -50,6 +37,20 @@ export function buildServer() {
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
   server.register(fastifyCompress);
+  // server.register(loggerPlugin);
+  server.register(aaa);
+
+  // server.addHook("onRequest", async (request, reply) => {
+  //   request.log.info(
+  //     {
+  //       method: request.method,
+  //       url: request.url,
+  //       userAgent: request.headers["user-agent"],
+  //       ip: request.ip,
+  //     },
+  //     "Incoming request"
+  //   );
+  // });
 
   // Routes
   server.register(appRoutes, { prefix: "/api" });
