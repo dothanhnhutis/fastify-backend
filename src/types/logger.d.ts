@@ -8,10 +8,12 @@ export interface CustomLogger extends Logger {
 // Extend Fastify types để include custom logger
 declare module "fastify" {
   interface FastifyInstance {
-    logger1: CustomLogger;
+    logger: CustomLogger;
+    routeLogger: Logger;
   }
 
-  // interface FastifyRequest {
-  //   logger1: CustomLogger;
-  // }
+  interface FastifyRequest {
+    logger: CustomLogger;
+    startTime: [number, number];
+  }
 }

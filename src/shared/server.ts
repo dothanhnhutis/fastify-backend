@@ -1,5 +1,6 @@
-import fastify, {
+import Fastify, {
   FastifyInstance,
+  FastifyRegisterOptions,
   FastifyReply,
   FastifyRequest,
 } from "fastify";
@@ -8,61 +9,44 @@ import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
 import appRoutes from "@/modules";
 import config from "./config";
-import { loggerPlugin } from "./plugins/logger";
+import loggerPlugin from "./plugins/logger";
 
 declare module "fastify" {
-  export interface FastifyInstance {}
+  export interface FastifyInstance {
+    utility: () => void;
+  }
   export interface FastifyRequest {}
 }
 
-async function aaa(server: FastifyInstance) {
-  server.addHook(
-    "onRequest",
-    async (req: FastifyRequest, reply: FastifyReply, done: Fastify) => {
-      console.log("first");
-    }
-  );
-}
-
-export function buildServer() {
-  const server = fastify({
+export async function buildServer() {
+  const fastify = Fastify({
     logger: false,
     trustProxy: true,
   });
+  await fastify.register(loggerPlugin, {
+    level: "info",
+    serviceName: "my-api-service",
+  });
 
-  server.register(fastifyHelmet);
-  server.register(fastifyCors, {
+  fastify.register(fastifyHelmet);
+  fastify.register(fastifyCors, {
     origin: config.CLIENT_URL,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
-  server.register(fastifyCompress);
-  // server.register(loggerPlugin);
-  server.register(aaa);
-
-  // server.addHook("onRequest", async (request, reply) => {
-  //   request.log.info(
-  //     {
-  //       method: request.method,
-  //       url: request.url,
-  //       userAgent: request.headers["user-agent"],
-  //       ip: request.ip,
-  //     },
-  //     "Incoming request"
-  //   );
-  // });
+  fastify.register(fastifyCompress);
 
   // Routes
-  server.register(appRoutes, { prefix: "/api" });
+  fastify.register(appRoutes, { prefix: "/api" });
 
-  // Error handling
-  server.setErrorHandler((error, request, reply) => {
-    console.log("Application error", {
-      error: error.message,
-      stack: error.stack,
-    });
-    reply.status(500).send({ error: "Internal Server Error" });
-  });
+  //   // Error handling
+  //   fastify.setErrorHandler((error, request, reply) => {
+  //     console.log("Application error", {
+  //       error: error.message,
+  //       stack: error.stack,
+  //     });
+  //     reply.status(500).send({ error: "Internal Server Error" });
+  //   });
 
-  return server;
+  return fastify;
 }
