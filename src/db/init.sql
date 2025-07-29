@@ -1,6 +1,6 @@
 
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL ,
+    "id" TEXT NOT NULL DEFAULT,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "username" TEXT NOT NULL,

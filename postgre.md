@@ -159,3 +159,107 @@ UPDATE weather
     SET temp_hi = temp_hi - 2,  temp_lo = temp_lo - 2
     WHERE date > '1994-11-28';
 ```
+
+### 2.9. Deletions
+
+```sql
+DELETE FROM weather WHERE city = 'Hayward';
+--- xoá tất cả các dòng của bảng
+DELETE FROM tablename;
+```
+
+## Chapter 3. Advanced Features
+
+### 3.2. Views
+
+```sql
+CREATE VIEW myview AS
+    SELECT name, temp_lo, temp_hi, prcp, date, location
+        FROM weather, cities
+        WHERE city = name;
+
+SELECT * FROM myview;
+```
+
+### 3.3. Foreign Keys
+
+all-or-nothing operation
+
+```sql
+CREATE TABLE cities (
+        name     varchar(80) primary key, --- primary key
+        location point
+);
+
+CREATE TABLE weather (
+        city      varchar(80) references cities(name), --- Foreign Keys
+        temp_lo   int,
+        temp_hi   int,
+        prcp      real,
+        date      date
+);
+```
+
+### 3.4. Transactions
+
+```sql
+BEGIN;
+UPDATE accounts SET balance = balance - 100.00
+    WHERE name = 'Alice';
+-- etc etc
+COMMIT;
+```
+
+### 3.5. Window Functions
+
+Window Functions của PostgreSQL có tác dụng chia dữ liệu thành từng nhóm (partition) để hàm cửa sổ (window function) tính toán trong phạm vi từng nhóm đó, mà không gộp nhóm như `GROUP BY`.
+
+Các window function phổ biến dùng với `PARTITION BY`
+
+- ROW_NUMBER(): Đánh số thứ tự trong mỗi nhóm
+- RANK(), DENSE_RANK(): Xếp hạng trong nhóm
+- SUM(), AVG(), MIN(), MAX(): Tính tổng, trung bình... theo nhóm
+- LAG(), LEAD(): Lấy giá trị dòng trước/sau trong nhóm
+
+Khác biệt với GROUP BY:
+
+- GROUP BY: Gộp nhóm → 1 dòng cho mỗi nhóm.
+- PARTITION BY: Không gộp nhóm, dữ liệu chi tiết vẫn còn, chỉ tính toán trong phạm vi từng nhóm.
+
+Ví dụ: Giả sử có bảng weather
+| city | date | temp_lo |
+| ----- | ---------- | -------- |
+| Hanoi | 2025-07-21 | 28 |
+| Hanoi | 2025-07-22 | 30 |
+| HCM | 2025-07-21 | 32 |
+| HCM | 2025-07-22 | 31 |
+| HCM | 2025-07-23 | 33 |
+
+```sql
+--- Dùng GROUP BY (gộp nhóm)
+SELECT city, AVG(temp_lo)
+FROM weather
+GROUP BY city;
+```
+
+Kết quả
+
+| city  | avg_temp_lo |
+| ----- | ----------- |
+| Hanoi | 29          |
+| HCM   | 32          |
+
+```sql
+--- Dùng Window Function với PARTITION BY
+SELECT city, date, temp_lo,
+       AVG(temp_lo) OVER (PARTITION BY city) AS avg_temp_city
+FROM weather;
+```
+
+| city  | date       | temp_lo | avg_temp_city |
+| ----- | ---------- | ------- | ------------- |
+| Hanoi | 2025-07-21 | 28      | 29            |
+| Hanoi | 2025-07-22 | 30      | 29            |
+| HCM   | 2025-07-21 | 32      | 32            |
+| HCM   | 2025-07-22 | 31      | 32            |
+| HCM   | 2025-07-23 | 33      | 32            |
