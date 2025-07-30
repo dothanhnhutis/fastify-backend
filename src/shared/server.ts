@@ -39,7 +39,7 @@ export async function buildServer() {
   fastify.register(fastifyCompress);
 
   // Routes
-  fastify.register(appRoutes, { prefix: "/api" });
+  fastify.register(appRoutes, { prefix: "/api/v1" });
 
   // Error handling
   fastify.setErrorHandler((error, request, reply) => {

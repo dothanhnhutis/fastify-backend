@@ -9,6 +9,11 @@ export async function SignInController(
 ) {
   const { email, password } = req.body;
 
+  const dbRes = await req.pg?.query(`SELECT *
+FROM "User"
+WHERE email = '${email}';`);
+  console.log(dbRes);
+
   reply.code(200).send({
     email,
     password,

@@ -2,5 +2,5 @@
 
 --- cách 2
 COPY "User" (email, password_hash, username)
-FROM 'E:\developer\fastify-backend\src\db\data\user.csv'
+FROM '/data/user.csv'
 WITH (FORMAT csv, HEADER true, DELIMITER ',');

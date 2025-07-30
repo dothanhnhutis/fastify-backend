@@ -1,5 +1,5 @@
 -- config database
--- ALTER DATABASE pgdb SET datestyle = 'ISO, MDY';
+ALTER DATABASE pgdb SET datestyle = 'ISO, MDY';
 
 -- DROP TABLE IF EXISTS "PackagingTransaction";
 
