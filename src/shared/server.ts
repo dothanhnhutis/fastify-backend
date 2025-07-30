@@ -10,6 +10,7 @@ import fastifyCompress from "@fastify/compress";
 import appRoutes from "@/modules";
 import config from "./config";
 import loggerPlugin from "./plugins/logger";
+import postgresDBPlugin from "./plugins/postgres";
 
 // declare module "fastify" {
 //   export interface FastifyInstance {
@@ -27,6 +28,7 @@ export async function buildServer() {
     level: "debug",
     serviceName: "my-api-service",
   });
+  fastify.register(postgresDBPlugin);
 
   fastify.register(fastifyHelmet);
   fastify.register(fastifyCors, {

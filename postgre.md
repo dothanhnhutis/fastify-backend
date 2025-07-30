@@ -9,7 +9,7 @@ Thứ tự logic phổ biến trong SQL là:
 - WHERE
 - GROUP BY
 - HAVING
-- SELECT
+- SELECT (Window Functions)
 - ORDER BY
 - LIMIT / OFFSET
 
@@ -214,6 +214,8 @@ COMMIT;
 
 Window Functions của PostgreSQL có tác dụng chia dữ liệu thành từng nhóm (partition) để hàm cửa sổ (window function) tính toán trong phạm vi từng nhóm đó, mà không gộp nhóm như `GROUP BY`.
 
+Window Functions được sử dụng trong `SELECT` và `ORDER BY`. Chúng bị cấm ở nơi khác như là `GROUP BY`, `HAVING` và `WHERE` vì Window Functions sẽ thực thi sau mệnh các mệnh đề đó
+
 Các window function phổ biến dùng với `PARTITION BY`
 
 - ROW_NUMBER(): Đánh số thứ tự trong mỗi nhóm
@@ -226,7 +228,9 @@ Khác biệt với GROUP BY:
 - GROUP BY: Gộp nhóm → 1 dòng cho mỗi nhóm.
 - PARTITION BY: Không gộp nhóm, dữ liệu chi tiết vẫn còn, chỉ tính toán trong phạm vi từng nhóm.
 
-Ví dụ: Giả sử có bảng weather
+Ví dụ: So sánh `GROUP BY` và `PARTITION BY`
+
+Giả sử có bảng weather
 | city | date | temp_lo |
 | ----- | ---------- | -------- |
 | Hanoi | 2025-07-21 | 28 |
@@ -263,3 +267,131 @@ FROM weather;
 | HCM   | 2025-07-21 | 32      | 32            |
 | HCM   | 2025-07-22 | 31      | 32            |
 | HCM   | 2025-07-23 | 33      | 32            |
+
+Một số ví dụ khác
+
+```sql
+--- Tính tổng salary và rán cho mỗi dòng của bảng
+SELECT salary, sum(salary) OVER () FROM empsalary;
+```
+
+Kết quả
+| salary | sum |
+| ------ | ----- |
+| 5200 | 47100 |
+| 5000 | 47100 |
+| 3500 | 47100 |
+
+```sql
+--- Tính tổng lũy kế salary, khi sắp xếp theo salary tăng dần, rồi hiển thị cùng với từng salary.
+SELECT salary, sum(salary) OVER (ORDER BY salary) FROM empsalary;
+```
+
+Kết quả
+| salary | sum |
+| ------ | ----- |
+| 3500 | 3500 |
+| 3900 | 7400 |
+| 4200 | 11600 |
+| 4500 | 16100 |
+| 4800 | 25700 |
+| 4800 | 25700 |
+
+```sql
+--- Tìm Top 2 nhân viên mỗi phòng ban theo lương
+SELECT depname, empno, salary, enroll_date
+FROM
+  (SELECT depname, empno, salary, enroll_date,
+          rank() OVER (PARTITION BY depname ORDER BY salary DESC, empno) AS pos
+     FROM empsalary
+  ) AS ss
+WHERE pos < 3;
+```
+
+So sánh giữa dùng `Window Functions` ở `SELECT` và `ORDER BY`
+
+Ví dụ:
+| empno | depname | salary |
+| ----- | ------- | ------ |
+| 1 | HR | 1000 |
+| 2 | HR | 1200 |
+| 3 | HR | 1500 |
+| 4 | IT | 2000 |
+| 5 | IT | 1800 |
+
+```sql
+---
+SELECT empno,
+       depname,
+       salary,
+       RANK() OVER (PARTITION BY depname ORDER BY salary DESC) AS rank_in_dep
+FROM empsalary
+ORDER BY rank_in_dep;
+```
+
+Kết quả
+| empno | depname | salary | rank_in_dep |
+| ----- | ------- | ------ | ------------- |
+| 3 | HR | 1500 | 1 |
+| 2 | HR | 1200 | 2 |
+| 1 | HR | 1000 | 3 |
+| 4 | IT | 2000 | 1 |
+| 5 | IT | 1800 | 2 |
+
+```sql
+---
+SELECT empno, depname, salary
+FROM empsalary
+ORDER BY RANK() OVER (PARTITION BY depname ORDER BY salary DESC);
+```
+
+Kết quả
+| empno | depname | salary |
+| ----- | ------- | ------ |
+| 3 | HR | 1500 |
+| 2 | HR | 1200 |
+| 1 | HR | 1000 |
+| 4 | IT | 2000 |
+| 5 | IT | 1800 |
+
+=> Kết Luận: Sử dụng `Window Functions` ở `SELECT` và `ORDER BY` đều có kết quả giống nhau nhưng ở `SELECT` sẽ thấy được giá trị của `Window Functions` còn `ORDER BY` thì không.
+
+### 3.6. Inheritance - Kế thừa (Không khuyến khích sử dụng inheritance cho phân vùng dữ liệu)
+
+**PostgreSQL >=10 đã có table partitioning, mạnh hơn và tối ưu hơn**
+
+Kế thừa Postgres cũng giống như kế thừa ở `lập trình hướng đối tượng`
+
+> Lưu ý:
+>
+> - Các dữ liệu chèn vào bảng sẽ tồn tại trong bảng con
+> - khi bạn `SELECT` trên bảng cha, PostgreSQL có thể trả về cả dữ liệu từ bảng con (nếu không có ONLY)
+
+```sql
+-- Bảng cha
+CREATE TABLE employees (
+    emp_id    serial PRIMARY KEY,
+    name      text,
+    hire_date date
+);
+
+-- Bảng con kế thừa từ employees
+CREATE TABLE managers (
+    dept text
+) INHERITS (employees);
+
+--- chèn vào bảng employees
+INSERT INTO employees (name, hire_date)
+VALUES ('Alice', '2023-01-01');
+--- chèn vào bảng managers
+INSERT INTO managers (name, hire_date, dept)
+VALUES ('Bob', '2023-02-01', 'IT');
+--- Alice và Bob đều được trả về
+SELECT * FROM employees;
+--- chỉ có Alice trả về
+SELECT * FROM ONLY employees;
+```
+
+## Chapter 4. SQL Syntax
+
+### 4.1. Lexical Structure

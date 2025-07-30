@@ -23,6 +23,7 @@
     "dotenv": "^17.2.1",
     "fastify": "^5.4.0",
     "fastify-plugin": "^5.0.1",
+    "pg": "^8.16.3",
     "pino": "^9.7.0",
     "rotating-file-stream": "^3.2.6",
     "zod": "^4.0.10"
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
     "@types/node": "^24.1.0",
+    "@types/pg": "^8.15.5",
     "ts-node": "^10.9.2",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",

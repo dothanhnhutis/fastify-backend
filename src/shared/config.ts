@@ -28,6 +28,7 @@ const envSchema = z.object({
   SENDER_EMAIL: z.string(),
   // message broker
   RABBITMQ_URL: z.string(),
+  DATABASE_URL: z.string(),
 });
 
 const configParser = envSchema.safeParse({
@@ -54,6 +55,7 @@ const configParser = envSchema.safeParse({
   SENDER_EMAIL: process.env.SENDER_EMAIL,
 
   RABBITMQ_URL: process.env.RABBITMQ_URL,
+  DATABASE_URL: process.env.DATABASE_URL,
 
   // CLOUDINARY_NAME: process.env.CLOUDINARY_NAME,
   // CLOUDINARY_KEY: process.env.CLOUDINARY_KEY,
