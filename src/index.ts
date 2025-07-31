@@ -22,14 +22,14 @@ import { buildServer } from "./shared/server";
 // Khởi tạo server
 async function start(): Promise<void> {
   try {
-    const app = await buildServer();
+    const server = await buildServer();
 
     const port = parseInt(process.env.PORT || "3000");
     const host = process.env.HOST || "0.0.0.0";
 
-    await app.listen({ port, host });
+    await server.listen({ port, host });
 
-    app.logger.info(`Server started on ${host}:${port}`);
+    server.logger.info(`Server started on ${host}:${port}`);
   } catch (err) {
     console.error("Error starting server:", err);
     process.exit(1);

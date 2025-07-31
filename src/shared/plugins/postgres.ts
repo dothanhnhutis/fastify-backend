@@ -26,10 +26,10 @@ async function postgresDB(
   fastify.decorateRequest("pg");
   fastify.decorateRequest("user");
 
-  // Mượn connection cho mỗi request (chỉ khi cần, xem cách 2 nếu muốn lazy)
+  // Mượn connection cho mỗi request
   fastify.addHook("onRequest", async (req) => {
     req.pg = await pool.connect();
-    req.user = new UserRepo(req.pg);
+    req.user = new UserRepo(req);
   });
 
   // Trả connection về pool khi response xong

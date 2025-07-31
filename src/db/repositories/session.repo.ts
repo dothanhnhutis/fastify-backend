@@ -1,21 +1,69 @@
-export type User = {
-  id: string;
-  email: string;
-  password_hash: string;
-  username: string;
-  created_at: Date;
-  updated_at: Date;
+import config from "@/shared/config";
+import Helper from "@/shared/helper";
+import { FastifyInstance } from "fastify";
+import Redis from "ioredis";
+
+type CacheSession = {
+  userId: string;
+  ip: string;
+  userAgentRaw: string;
+  provider: "credential" | "google";
+  cookie?: CookieOptions;
 };
 
-export class UserRepo {
-  constructor(private client: PoolClient) {}
+export class SessionRepo {
+  constructor(private fastify: FastifyInstance) {}
 
-  async findByEmail(email: string): Promise<User | null> {
-    const queryConfig: QueryConfig = {
-      text: `SELECT * FROM "User" WHERE email = $1 LIMIT 1`,
-      values: [email],
+  async create(d: CacheSession) {
+    const sessionId = await Helper.generateId();
+    const now = new Date();
+
+    const cookieOpt: CookieOptions = {
+      path: "/",
+      httpOnly: true,
+      secure: config.NODE_ENV == "production",
+      expires: new Date(now.getTime() + config.SESSION_MAX_AGE),
+      ...session.cookie,
     };
-    const { rows }: QueryResult<User> = await this.client.query(queryConfig);
-    return rows[0] ?? null;
+
+    const data: SessionData = {
+      id: sessionId,
+      provider: session.provider,
+      userId: session.userId,
+      cookie: cookieOpt,
+      ip: session.ip,
+      userAgent: UAParser(session.userAgentRaw),
+      lastAccess: now,
+      createAt: now,
+    };
+
+    const key = `${config.SESSION_KEY_NAME}:${session.userId}:${sessionId}`;
+
+    try {
+      if (cookieOpt.expires) {
+        await this.client.set(
+          key,
+          JSON.stringify(data),
+          "PX",
+          cookieOpt.expires.getTime() - Date.now()
+        );
+      } else {
+        await this.client.set(key, JSON.stringify(data));
+      }
+
+      return {
+        key,
+        cookie: cookieOpt,
+      };
+    } catch (error: unknown) {
+      // if (error instanceof Error) {
+      //   throw new RedisQueryError(
+      //     `SessionCache.create() method error: ${error.message}`
+      //   );
+      // }
+      // throw new RedisQueryError(
+      //   `SessionCache.create() method error: Unknown error ${error}`
+      // );
+    }
   }
 }

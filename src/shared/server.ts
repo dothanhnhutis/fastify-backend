@@ -11,7 +11,8 @@ import appRoutes from "@/modules";
 import config from "./config";
 import loggerPlugin from "./plugins/logger";
 import postgresDBPlugin from "./plugins/postgres";
-import { CustomError, errorHandler } from "./error-handler";
+import redisPlugin from "./plugins/redis";
+import { errorHandler } from "./error-handler";
 
 // declare module "fastify" {
 //   export interface FastifyInstance {
@@ -30,6 +31,7 @@ export async function buildServer() {
     serviceName: "my-api-service",
   });
   fastify.register(postgresDBPlugin);
+  fastify.register(redisPlugin, { url: config.REDIS_URL });
 
   fastify.register(fastifyHelmet);
   fastify.register(fastifyCors, {

@@ -39,7 +39,7 @@ type ErrorCode =
   | "FORBIDDEN"
   | "ERR_VALID";
 
-export default class BadRequestError extends CustomError<ErrorCode> {
+export class BadRequestError extends CustomError<ErrorCode> {
   constructor(message: string) {
     super({
       message,
@@ -83,4 +83,14 @@ export function errorHandler(
       getErrorMessage(error) ||
       "An error occurred. Please view logs for more details",
   });
+}
+
+export class DatabaseError extends CustomError<string> {
+  constructor(message: string) {
+    super({
+      message,
+      statusCode: StatusCodes.BAD_REQUEST,
+      statusText: "BAD_REQUEST",
+    });
+  }
 }
