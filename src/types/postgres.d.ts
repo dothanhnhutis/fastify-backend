@@ -1,3 +1,4 @@
+import { UserRepo } from "@/db/repositories/user.repo";
 import { Pool, PoolClient } from "pg";
 
 // Extend Fastify types để include custom logger
@@ -7,6 +8,7 @@ declare module "fastify" {
   }
 
   interface FastifyRequest {
-    pg: PoolClient | null;
+    pg: PoolClient;
+    user: UserRepo;
   }
 }

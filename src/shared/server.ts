@@ -11,6 +11,7 @@ import appRoutes from "@/modules";
 import config from "./config";
 import loggerPlugin from "./plugins/logger";
 import postgresDBPlugin from "./plugins/postgres";
+import { CustomError, errorHandler } from "./error-handler";
 
 // declare module "fastify" {
 //   export interface FastifyInstance {
@@ -42,13 +43,7 @@ export async function buildServer() {
   fastify.register(appRoutes, { prefix: "/api/v1" });
 
   // Error handling
-  fastify.setErrorHandler((error, request, reply) => {
-    console.log("Application error", {
-      error: error.message,
-      stack: error.stack,
-    });
-    reply.status(500).send({ error: "Internal Server Error" });
-  });
+  fastify.setErrorHandler(errorHandler);
 
   return fastify;
 }

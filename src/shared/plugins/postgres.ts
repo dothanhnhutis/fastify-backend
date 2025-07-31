@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import fp from "fastify-plugin";
 import { Pool, PoolConfig } from "pg";
 import config from "../config";
+import { UserRepo } from "@/db/repositories/user.repo";
 export interface PostgresDBOptions extends PoolConfig {}
 
 async function postgresDB(
@@ -22,11 +23,13 @@ async function postgresDB(
 
   fastify.decorate("pgPool", pool);
   // Khai báo property để Fastify cho phép gán vào request
-  fastify.decorateRequest("pg", null);
+  fastify.decorateRequest("pg");
+  fastify.decorateRequest("user");
 
   // Mượn connection cho mỗi request (chỉ khi cần, xem cách 2 nếu muốn lazy)
   fastify.addHook("onRequest", async (req) => {
     req.pg = await pool.connect();
+    req.user = new UserRepo(req.pg);
   });
 
   // Trả connection về pool khi response xong
