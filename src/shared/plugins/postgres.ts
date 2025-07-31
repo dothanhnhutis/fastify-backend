@@ -22,7 +22,6 @@ async function postgresDB(
   });
 
   fastify.decorate("pgPool", pool);
-  // Khai báo property để Fastify cho phép gán vào request
   fastify.decorateRequest("pg");
   fastify.decorateRequest("user");
 
@@ -32,12 +31,10 @@ async function postgresDB(
     req.user = new UserRepo(req);
   });
 
-  // Trả connection về pool khi response xong
   fastify.addHook("onResponse", async (req) => {
     req.pg?.release();
   });
 
-  // Phòng hờ khi có lỗi
   fastify.addHook("onError", async (req) => {
     req.pg?.release();
   });
