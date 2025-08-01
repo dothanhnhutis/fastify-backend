@@ -11,7 +11,7 @@ export async function SignInController(
 ) {
   const { email, password } = req.body;
   const user = await req.user.findByEmail(email);
-
+  console.log(await Password.hash("@Abc123123"));
   if (
     !user ||
     !user.password_hash ||

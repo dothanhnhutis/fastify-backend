@@ -5,6 +5,6 @@ export default class Password {
     return argon2.hash(data);
   }
   static compare(hashData: string, data: string): Promise<boolean> {
-    return argon2.verify(hashData, data);
+    return argon2.verify(hashData, data).catch(() => false);
   }
 }

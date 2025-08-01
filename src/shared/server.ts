@@ -31,8 +31,8 @@ export async function buildServer() {
       level: "debug",
       serviceName: "my-api-service",
     })
-    .register(postgresDBPlugin)
-    .register(redisPlugin, { url: config.REDIS_URL });
+    .register(postgresDBPlugin);
+  // .register(redisPlugin, { url: config.REDIS_URL });
 
   fastify.register(fastifyHelmet);
   fastify.register(fastifyCors, {
