@@ -7,6 +7,7 @@ const envSchema = z.object({
   // server
   NODE_ENV: z.string(),
   PORT: z.number(),
+  HOST: z.string(),
   DEBUG: z.boolean(),
   CLIENT_URL: z.string(),
   SERVER_URL: z.string(),
@@ -34,6 +35,7 @@ const envSchema = z.object({
 const configParser = envSchema.safeParse({
   NODE_ENV: process.env.NODE_ENV || "development",
   DEBUG: process.env.APP_DEBUG === "true",
+  HOST: process.env.HOST || "0.0.0.0",
   PORT: parseInt(process.env.PORT || "4000"),
   CLIENT_URL: process.env.CLIENT_URL,
   SERVER_URL: process.env.SERVER_URL,

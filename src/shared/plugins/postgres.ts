@@ -52,12 +52,10 @@ async function postgresDB(
     req.user = new UserRepo(req);
   });
 
-  // Trả connection về pool khi response xong
   fastify.addHook("onResponse", async (req) => {
     req.pg?.release();
   });
 
-  // Phòng hờ khi có lỗi
   fastify.addHook("onError", async (req) => {
     req.pg?.release();
   });
