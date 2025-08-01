@@ -26,12 +26,13 @@ export async function buildServer() {
     logger: false,
     trustProxy: true,
   });
-  await fastify.register(loggerPlugin, {
-    level: "debug",
-    serviceName: "my-api-service",
-  });
-  fastify.register(postgresDBPlugin);
-  fastify.register(redisPlugin, { url: config.REDIS_URL });
+  await fastify
+    .register(loggerPlugin, {
+      level: "debug",
+      serviceName: "my-api-service",
+    })
+    .register(postgresDBPlugin)
+    .register(redisPlugin, { url: config.REDIS_URL });
 
   fastify.register(fastifyHelmet);
   fastify.register(fastifyCors, {

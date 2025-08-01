@@ -10,16 +10,14 @@ export async function SignInController(
   reply: FastifyReply
 ) {
   const { email, password } = req.body;
-  // const user = await req.user.findByEmail(email);
+  const user = await req.user.findByEmail(email);
 
-  // if (
-  //   !user ||
-  //   !user.password_hash ||
-  //   !(await Password.compare(user.password_hash, password))
-  // )
-  //   throw new BadRequestError("Email và mật khẩu không hợp lệ.");
+  if (
+    !user ||
+    !user.password_hash ||
+    !(await Password.compare(user.password_hash, password))
+  )
+    throw new BadRequestError("Email và mật khẩu không hợp lệ.");
 
-  reply.code(200).send({
-    mesage: "",
-  });
+  reply.code(200).send(user);
 }

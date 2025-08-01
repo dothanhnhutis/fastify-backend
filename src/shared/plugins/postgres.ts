@@ -1,14 +1,20 @@
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import fp from "fastify-plugin";
 import { Pool, PoolConfig } from "pg";
+import { FastifyInstance, FastifyPluginOptions } from "fastify";
+
 import config from "../config";
 import { UserRepo } from "@/db/repositories/user.repo";
+
 export interface PostgresDBOptions extends PoolConfig {}
 
 async function postgresDB(
   fastify: FastifyInstance,
   options: PostgresDBOptions & FastifyPluginOptions
 ) {
+  let connected = false;
+  const reconnectInterval = 5000;
+  let retries = 1;
+
   const pool = new Pool({
     connectionString:
       config.DATABASE_URL ||
@@ -17,14 +23,28 @@ async function postgresDB(
     ...options,
   });
 
-  pool.on("connect", (client) => {
-    fastify.logger.info("database connected.");
-  });
-
   fastify.decorate("pgPool", pool);
-  // Khai báo property để Fastify cho phép gán vào request
   fastify.decorateRequest("pg");
   fastify.decorateRequest("user");
+
+  fastify.addHook("onRoute", async () => {
+    while (!connected) {
+      try {
+        const client = await pool.connect();
+        await client.query("SELECT NOW()");
+        client.release();
+        connected = true;
+        fastify.log.info("✅ Database connected successfully");
+        break;
+      } catch (error) {
+        fastify.logger.warn(
+          `Database connection failed, retries time: ${retries}`
+        );
+        retries++;
+        await new Promise((resolve) => setTimeout(resolve, reconnectInterval));
+      }
+    }
+  });
 
   // Mượn connection cho mỗi request
   fastify.addHook("onRequest", async (req) => {
