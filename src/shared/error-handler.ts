@@ -68,7 +68,6 @@ export function errorHandler(
   reply: FastifyReply
 ) {
   if (reply.sent || (reply.raw && reply.raw.headersSent) || config.DEBUG) {
-    console.log(error);
     reply.status(StatusCodes.INTERNAL_SERVER_ERROR).send(error);
   }
 

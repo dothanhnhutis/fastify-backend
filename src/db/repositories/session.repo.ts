@@ -1,7 +1,7 @@
 import config from "@/shared/config";
 import Helper from "@/shared/helper";
 import { FastifyInstance } from "fastify";
-import Redis from "ioredis";
+import { UAParser } from "ua-parser-js";
 
 type CacheSession = {
   userId: string;
@@ -11,10 +11,21 @@ type CacheSession = {
   cookie?: CookieOptions;
 };
 
+export type SessionData = {
+  id: string;
+  provider: "google" | "credential";
+  userId: string;
+  cookie: CookieOptions;
+  ip: string;
+  userAgent: UAParser.IResult;
+  lastAccess: Date;
+  createAt: Date;
+};
+
 export class SessionRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async create(d: CacheSession) {
+  async create(session: CacheSession) {
     const sessionId = await Helper.generateId();
     const now = new Date();
 
@@ -41,14 +52,14 @@ export class SessionRepo {
 
     try {
       if (cookieOpt.expires) {
-        await this.client.set(
+        await this.fastify.redis.set(
           key,
           JSON.stringify(data),
           "PX",
           cookieOpt.expires.getTime() - Date.now()
         );
       } else {
-        await this.client.set(key, JSON.stringify(data));
+        await this.fastify.redis.set(key, JSON.stringify(data));
       }
 
       return {

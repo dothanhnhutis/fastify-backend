@@ -32,7 +32,7 @@ async function postgresDB(
 
   // Handle pool errors
   pool.on("error", (err) => {
-    fastify.logger.error(err, "PostgreSQL pool error");
+    fastify.logger.error(err, "PostgreSQL - Pool error");
     isConnected = false;
 
     // Don't reconnect immediately if we're already reconnecting
@@ -44,7 +44,7 @@ async function postgresDB(
   // Handle client errors
   pool.on("connect", (client: PoolClient) => {
     client.on("error", (err) => {
-      fastify.logger.error(err, "PostgreSQL client error");
+      fastify.logger.error(err, "PostgreSQL - client error");
     });
   });
 
@@ -54,21 +54,23 @@ async function postgresDB(
 
   async function reconnect() {
     while (!isConnected) {
-      fastify.logger.warn(`Attempting to reconnect to database...`);
+      fastify.logger.warn(
+        `PostgreSQL - Attempting to reconnect to database...`
+      );
       try {
         const client = await pool.connect();
         await client.query("SELECT 1");
         client.release();
         isConnected = true;
         reconnectAttempts = 0;
-        fastify.logger.info("Database connected successfully");
+        fastify.logger.info("PostgreSQL - Database connected successfully");
         break;
       } catch (error) {
-        reconnectAttempts = reconnectAttempts + 1;
+        reconnectAttempts++;
         isConnected = false;
         fastify.logger.warn(
           error,
-          `Reconnection attempt ${reconnectAttempts} failed`
+          `PostgreSQL - Reconnection attempt ${reconnectAttempts} failed`
         );
         await sleep(reconnectInterval);
       }
@@ -81,12 +83,15 @@ async function postgresDB(
       await client.query("SELECT 1");
       client.release();
       isConnected = true;
-      fastify.logger.info("Database connected successfully");
+      fastify.logger.info("PostgreSQL - Database connected successfully");
     } catch (error) {
       isConnected = false;
+      fastify.logger.error(
+        "PostgreSQL - Database temporarily unavailable. Please try again in a few moments"
+      );
       throw new CustomError({
         message:
-          "Database temporarily unavailable. Please try again in a few moments",
+          "PostgreSQL - Database temporarily unavailable. Please try again in a few moments",
         statusCode: StatusCodes.SERVICE_UNAVAILABLE,
         statusText: "SERVICE_UNAVAILABLE",
       });
@@ -98,14 +103,14 @@ async function postgresDB(
     if (!isConnected)
       throw new CustomError({
         message:
-          "Database temporarily unavailable. Please try again in a few moments",
+          "PostgreSQL - Database temporarily unavailable. Please try again in a few moments",
         statusCode: StatusCodes.SERVICE_UNAVAILABLE,
         statusText: "SERVICE_UNAVAILABLE",
       });
     try {
       req.pg = await pool.connect();
     } catch (err) {
-      fastify.logger.error(err, "PostgreSQL onRequest error");
+      fastify.logger.error(err, "PostgreSQL - onRequest error");
       isConnected = false;
 
       // Don't reconnect immediately if we're already reconnecting

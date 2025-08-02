@@ -1,77 +1,9 @@
-import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import fp from "fastify-plugin";
-import Redis, { RedisOptions as RedisOpts } from "ioredis";
-import { CustomError } from "../error-handler";
 import { StatusCodes } from "http-status-codes";
+import Redis, { RedisOptions as RedisOpts } from "ioredis";
+import { FastifyInstance, FastifyPluginOptions } from "fastify";
 
-// class RedisCache {
-//   private _client: Redis | null;
-//   private isConnecting = false;
-//   private reconnectInterval = 5000;
-
-//   constructor(private url: string) {
-//     this._client = null;
-//   }
-
-//   async connect() {
-//     if (this.isConnecting) return;
-//     this.isConnecting = true;
-
-//     try {
-//       const connection = new Redis(this.url, {
-//         lazyConnect: true, // tắt auto connect
-//         retryStrategy: () => null, // Tắt retry tự động
-//       });
-
-//       await connection.connect();
-
-//       this.isConnecting = false;
-//       log.info("✅ Redis connected");
-//       this._client = connection;
-
-//       connection.on("error", (err) => {
-//         log.error(`❌ Redis error: ${err.message}`);
-//       });
-
-//       connection.on("close", async () => {
-//         log.warn("❌ Redis connection closed. Attempting manual reconnect...");
-//         this._client = null;
-//         await this.reconnect();
-//       });
-//     } catch (error: unknown) {
-//       this.isConnecting = false;
-//       log.error(`❌ Connect Redis error: ${error}`);
-//       throw new RedisConnectError();
-//     }
-//   }
-
-//   private async reconnect() {
-//     while (!this._client) {
-//       try {
-//         log.info("⏳ Trying to reconnect to Redis...");
-//         await this.connect();
-//       } catch (err) {
-//         log.error(
-//           `Reconnect attempt failed. Retrying in ${
-//             this.reconnectInterval / 1000
-//           }s...`
-//         );
-//         await this.sleep(this.reconnectInterval);
-//       }
-//     }
-//   }
-
-//   private sleep(ms: number) {
-//     return new Promise((resolve) => setTimeout(resolve, ms));
-//   }
-
-//   get client(): Redis {
-//     if (!this._client) {
-//       throw new Error("❌ Redis connection not established");
-//     }
-//     return this._client;
-//   }
-// }
+import { CustomError } from "../error-handler";
 
 interface RedisOptions
   extends Omit<RedisOpts, "retryStrategy" | "lazyConnect"> {
@@ -82,27 +14,53 @@ async function redisCache(
   fastify: FastifyInstance,
   options: RedisOptions & FastifyPluginOptions
 ) {
-  let isConnecting = false;
+  let isConnected = false,
+    reconnectAttempts = 0;
   const reconnectInterval = 5000;
 
   const { url, ...opts } = options;
+
   let redisClient: Redis = new Redis(options.url, {
     lazyConnect: true, // tắt auto connect
     retryStrategy: () => null, // Tắt retry tự động,
     ...opts,
   });
 
-  redisClient.on("error", (err) => {
-    console.log(`❌ Redis error: ${err.message}`);
-  });
-
-  redisClient.on("close", async () => {
-    console.log("❌ Redis connection closed. Attempting manual reconnect...");
-    // await reconnect();
-  });
-
   function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async function reconnect(): Promise<void> {
+    redisClient = new Redis(options.url, {
+      lazyConnect: true, // tắt auto connect
+      retryStrategy: () => null, // Tắt retry tự động,
+      ...opts,
+    });
+    while (!isConnected) {
+      console.log(`Redis - Attempting to reconnect to cache...`);
+      try {
+        await redisClient.connect();
+        console.log("Redis - Connected successfully");
+
+        redisClient.on("error", (err) => {
+          console.log("setupEventHandlers error");
+        });
+
+        redisClient.on("close", async () => {
+          isConnected = false;
+          redisClient.quit();
+          await reconnect();
+        });
+
+        isConnected = true;
+        reconnectAttempts = 0;
+        break;
+      } catch (error) {
+        reconnectAttempts++;
+        console.log(`Redis - Reconnection attempt ${reconnectAttempts} failed`);
+        await sleep(reconnectInterval); // <- Fix here: not working
+      }
+    }
   }
 
   fastify.decorate("redis", redisClient);
@@ -110,7 +68,17 @@ async function redisCache(
   fastify.addHook("onReady", async () => {
     try {
       await redisClient.connect();
-      fastify.logger.info("Cache connected successfully");
+      console.log("Redis - connected successfully");
+      isConnected = true;
+
+      redisClient.on("error", (err) => {
+        console.log("setupEventHandlers error");
+      });
+
+      redisClient.on("close", async () => {
+        isConnected = false;
+        await reconnect();
+      });
     } catch (error) {
       throw new CustomError({
         message:
@@ -122,7 +90,7 @@ async function redisCache(
   });
 
   fastify.addHook("onClose", async () => {
-    fastify.log.info("Closing Redis connection");
+    fastify.logger.info("Closing Redis connection");
     await redisClient.quit();
   });
 }

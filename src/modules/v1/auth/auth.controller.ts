@@ -19,5 +19,17 @@ export async function SignInController(
   )
     throw new BadRequestError("Email và mật khẩu không hợp lệ.");
 
+  // const session = await req..create({
+  //   userId: user.id,
+  //   ip: ip || ips[0],
+  //   provider: "credential",
+  //   userAgentRaw: headers["user-agent"] || "",
+  // });
+
+  // const encryptSession = CryptoAES256GCM.encrypt(
+  //   session.key,
+  //   config.SESSION_SECRET_KEY
+  // );
+
   reply.code(200).send(user);
 }

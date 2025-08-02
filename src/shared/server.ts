@@ -12,6 +12,8 @@ import config from "./config";
 import loggerPlugin from "./plugins/logger";
 import postgresDBPlugin from "./plugins/postgres";
 import redisPlugin from "./plugins/redis";
+import redisPlugin1 from "./plugins/redis1";
+
 import { errorHandler } from "./error-handler";
 
 // declare module "fastify" {
@@ -41,7 +43,7 @@ export async function buildServer() {
       serviceName: "my-api-service",
     })
     .register(postgresDBPlugin)
-    .register(redisPlugin, { url: config.REDIS_URL });
+    .register(redisPlugin1, { url: config.REDIS_URL });
 
   // Routes
   fastify.register(appRoutes, { prefix: "/api/v1" });
