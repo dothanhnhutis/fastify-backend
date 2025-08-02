@@ -121,10 +121,10 @@ async function logger(
     pino.multistream(streams)
   );
 
-  fastify.decorateRequest("logger");
   // Đăng ký logger với Fastify
   fastify.decorate("logger", logger);
   fastify.decorate("routeLogger", routeLogger);
+  fastify.decorateRequest("logger");
 
   // Sử dụng onRoute hook để log route registration
   // QUAN TRỌNG: Hook này phải được đăng ký trước khi routes được định nghĩa
@@ -141,8 +141,6 @@ async function logger(
       `Route registered: ${routeOptions.method} ${routeOptions.url}`
     );
   });
-
-  // fastify.addHook("preHandler", async (request, reply) => {});
 
   // Hook để log tất cả requests
   fastify.addHook("onRequest", async (request, reply) => {

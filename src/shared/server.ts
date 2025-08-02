@@ -26,13 +26,6 @@ export async function buildServer() {
     logger: false,
     trustProxy: true,
   });
-  await fastify
-    .register(loggerPlugin, {
-      level: "debug",
-      serviceName: "my-api-service",
-    })
-    .register(postgresDBPlugin);
-  // .register(redisPlugin, { url: config.REDIS_URL });
 
   fastify.register(fastifyHelmet);
   fastify.register(fastifyCors, {
@@ -41,6 +34,14 @@ export async function buildServer() {
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
   fastify.register(fastifyCompress);
+
+  await fastify
+    .register(loggerPlugin, {
+      level: "debug",
+      serviceName: "my-api-service",
+    })
+    .register(postgresDBPlugin)
+    .register(redisPlugin, { url: config.REDIS_URL });
 
   // Routes
   fastify.register(appRoutes, { prefix: "/api/v1" });

@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyPluginOptions } from "fastify";
 import fp from "fastify-plugin";
 import Redis, { RedisOptions as RedisOpts } from "ioredis";
+import { CustomError } from "../error-handler";
+import { StatusCodes } from "http-status-codes";
 
 // class RedisCache {
 //   private _client: Redis | null;
@@ -84,62 +86,43 @@ async function redisCache(
   const reconnectInterval = 5000;
 
   const { url, ...opts } = options;
-  const redisClient = new Redis(options.url, {
+  let redisClient: Redis = new Redis(options.url, {
     lazyConnect: true, // tắt auto connect
     retryStrategy: () => null, // Tắt retry tự động,
     ...opts,
   });
 
   redisClient.on("error", (err) => {
-    fastify.logger.error(`❌ Redis error: ${err.message}`);
+    console.log(`❌ Redis error: ${err.message}`);
   });
 
   redisClient.on("close", async () => {
-    fastify.logger.warn(
-      "❌ Redis connection closed. Attempting manual reconnect..."
-    );
-    await reconnect();
+    console.log("❌ Redis connection closed. Attempting manual reconnect...");
+    // await reconnect();
   });
-
-  connect();
-
-  function connect() {
-    if (isConnecting) return;
-    isConnecting = true;
-
-    redisClient.connect((err) => {
-      isConnecting = false;
-      if (err) {
-        fastify.log.error(`❌ Connect Redis error: ${err}`);
-      }
-      fastify.logger.info("✅ Redis connected");
-    });
-  }
 
   function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async function reconnect() {
-    while (!fastify.redis) {
-      try {
-        fastify.logger.info("⏳ Trying to reconnect to Redis...");
-        await connect();
-      } catch (err) {
-        fastify.logger.error(
-          `Reconnect attempt failed. Retrying in ${
-            reconnectInterval / 1000
-          }s...`
-        );
-        await sleep(reconnectInterval);
-      }
-    }
-  }
-
   fastify.decorate("redis", redisClient);
 
+  fastify.addHook("onReady", async () => {
+    try {
+      await redisClient.connect();
+      fastify.logger.info("Cache connected successfully");
+    } catch (error) {
+      throw new CustomError({
+        message:
+          "Cache temporarily unavailable. Please try again in a few moments",
+        statusCode: StatusCodes.SERVICE_UNAVAILABLE,
+        statusText: "SERVICE_UNAVAILABLE",
+      });
+    }
+  });
+
   fastify.addHook("onClose", async () => {
-    fastify.log.info("🧹 Closing Redis connection");
+    fastify.log.info("Closing Redis connection");
     await redisClient.quit();
   });
 }
