@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import config from "./config";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // GCM dùng IV 12 bytes
@@ -50,3 +51,5 @@ export class CryptoAES256GCM {
     return decrypted.toString("utf8");
   }
 }
+
+export default new CryptoAES256GCM(config.SESSION_SECRET_KEY);

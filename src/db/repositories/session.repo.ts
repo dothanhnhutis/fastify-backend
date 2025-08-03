@@ -1,6 +1,8 @@
 import config from "@/shared/config";
+import { CustomError } from "@/shared/error-handler";
 import Helper from "@/shared/helper";
 import { FastifyInstance } from "fastify";
+import { StatusCodes } from "http-status-codes";
 import { UAParser } from "ua-parser-js";
 
 type CacheSession = {
@@ -72,9 +74,11 @@ export class SessionRepo {
       //     `SessionCache.create() method error: ${error.message}`
       //   );
       // }
-      // throw new RedisQueryError(
-      //   `SessionCache.create() method error: Unknown error ${error}`
-      // );
+      throw new CustomError({
+        message: `SessionCache.create() method error: Unknown error ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
     }
   }
 }

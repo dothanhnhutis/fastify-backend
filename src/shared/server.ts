@@ -12,8 +12,7 @@ import config from "./config";
 import loggerPlugin from "./plugins/logger";
 import postgresDBPlugin from "./plugins/postgres";
 import redisPlugin from "./plugins/redis";
-import redisPlugin1 from "./plugins/redis1";
-
+import cookiePlugin from "./plugins/cookie";
 import { errorHandler } from "./error-handler";
 
 // declare module "fastify" {
@@ -39,11 +38,16 @@ export async function buildServer() {
 
   await fastify
     .register(loggerPlugin, {
-      level: "debug",
+      level: "info",
       serviceName: "my-api-service",
     })
     .register(postgresDBPlugin)
-    .register(redisPlugin1, { url: config.REDIS_URL });
+    .register(redisPlugin, { url: config.REDIS_URL });
+
+  fastify.register(cookiePlugin, {
+    httpOnly: true,
+    secure: config.NODE_ENV === "production",
+  });
 
   // Routes
   fastify.register(appRoutes, { prefix: "/api/v1" });

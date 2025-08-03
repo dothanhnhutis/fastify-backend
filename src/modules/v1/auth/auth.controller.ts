@@ -2,6 +2,9 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { SignInBodyType } from "./auth.schema";
 import Password from "@/shared/password";
 import { BadRequestError } from "@/shared/error-handler";
+import CryptoAES256GCM from "@/shared/crypto";
+import config from "@/shared/config";
+import { StatusCodes } from "http-status-codes";
 
 export async function SignInController(
   req: FastifyRequest<{
@@ -11,7 +14,6 @@ export async function SignInController(
 ) {
   const { email, password } = req.body;
   const user = await req.user.findByEmail(email);
-  console.log(await Password.hash("@Abc123123"));
   if (
     !user ||
     !user.password_hash ||
@@ -19,17 +21,19 @@ export async function SignInController(
   )
     throw new BadRequestError("Email và mật khẩu không hợp lệ.");
 
-  // const session = await req..create({
-  //   userId: user.id,
-  //   ip: ip || ips[0],
-  //   provider: "credential",
-  //   userAgentRaw: headers["user-agent"] || "",
-  // });
+  const session = await req.session.create({
+    userId: user.id,
+    ip: req.ip || req.ips?.[0] || "",
+    provider: "credential",
+    userAgentRaw: req.headers["user-agent"] || "",
+  });
 
-  // const encryptSession = CryptoAES256GCM.encrypt(
-  //   session.key,
-  //   config.SESSION_SECRET_KEY
-  // );
+  const encryptSession = CryptoAES256GCM.encrypt(session.key);
 
-  reply.code(200).send(user);
+  reply
+    .code(StatusCodes.OK)
+    .setCookie(config.SESSION_KEY_NAME, encryptSession, {
+      ...session.cookie,
+    })
+    .send(user);
 }
