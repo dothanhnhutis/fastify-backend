@@ -1,9 +1,4 @@
-import Fastify, {
-  FastifyInstance,
-  FastifyRegisterOptions,
-  FastifyReply,
-  FastifyRequest,
-} from "fastify";
+import Fastify from "fastify";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
@@ -15,13 +10,6 @@ import redisPlugin from "./plugins/redis";
 import cookiePlugin from "./plugins/cookie";
 import sessionPlugin from "./plugins/session";
 import { errorHandler } from "./error-handler";
-
-// declare module "fastify" {
-//   export interface FastifyInstance {
-//     utility: () => void;
-//   }
-//   export interface FastifyRequest {}
-// }
 
 export async function buildServer() {
   const fastify = Fastify({
@@ -35,7 +23,12 @@ export async function buildServer() {
     credentials: true,
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   });
-  fastify.register(fastifyCompress);
+  fastify.register(fastifyCompress, {
+    requestEncodings: ["gzip", "deflate"], // Bỏ brotli
+    threshold: 1024,
+    customTypes: /^text\/|\+json$|\+text$|\+xml$/,
+    global: true,
+  });
 
   await fastify
     .register(loggerPlugin, {
@@ -56,7 +49,7 @@ export async function buildServer() {
   });
 
   // Routes
-  fastify.register(appRoutes, { prefix: "/api/v1" });
+  fastify.register(appRoutes, { prefix: "/api" });
 
   // Error handling
   fastify.setErrorHandler(errorHandler);

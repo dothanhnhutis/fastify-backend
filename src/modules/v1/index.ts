@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import userRoutes from "./user/user.routes";
 import authRoutes from "./auth/auth.routes";
+import sessionRoutes from "./session/session.routes";
 
 export default async function versionRoutes(fastify: FastifyInstance) {
   fastify.get("/health", (_: FastifyRequest, reply: FastifyReply) => {
@@ -12,5 +13,5 @@ export default async function versionRoutes(fastify: FastifyInstance) {
 
   fastify.register(authRoutes, { prefix: "/auth" });
   fastify.register(userRoutes, { prefix: "/users" });
-  fastify.register(userRoutes, { prefix: "/sessions" });
+  fastify.register(sessionRoutes, { prefix: "/sessions" });
 }

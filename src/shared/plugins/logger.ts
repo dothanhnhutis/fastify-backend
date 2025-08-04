@@ -100,7 +100,7 @@ async function logger(
   // Tạo logger với multiple streams
   const logger = pino(
     {
-      level: "info",
+      level: options.level ?? "info",
       timestamp: () => `,"time":"${new Date().toISOString()}"`,
       formatters: {
         level: (label: string) => {

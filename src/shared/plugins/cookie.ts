@@ -53,31 +53,31 @@ function serializeCookie(
 
   let cookie = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
 
-  if (maxAge) {
+  if (maxAge != undefined) {
     cookie += `; Max-Age=${Math.floor(maxAge / 1000)}`;
   }
 
-  if (expires) {
+  if (expires != undefined) {
     cookie += `; Expires=${expires.toUTCString()}`;
   }
 
-  if (httpOnly) {
+  if (httpOnly != undefined) {
     cookie += "; HttpOnly";
   }
 
-  if (secure) {
+  if (secure != undefined) {
     cookie += "; Secure";
   }
 
-  if (sameSite) {
+  if (sameSite != undefined) {
     cookie += `; SameSite=${sameSite}`;
   }
 
-  if (path) {
+  if (path != undefined) {
     cookie += `; Path=${path}`;
   }
 
-  if (domain) {
+  if (domain != undefined) {
     cookie += `; Domain=${domain}`;
   }
 

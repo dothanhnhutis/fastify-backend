@@ -24,6 +24,8 @@ export type SessionData = {
   createAt: Date;
 };
 
+const SCAN_COUNT = 100;
+
 export class SessionRepo {
   constructor(private fastify: FastifyInstance) {}
 
@@ -77,7 +79,7 @@ export class SessionRepo {
     }
   }
 
-  async getByKey(key: string): Promise<SessionData | null> {
+  async findByKey(key: string): Promise<SessionData | null> {
     try {
       const sessionCache = await this.fastify.redis.get(key);
       if (!sessionCache) return null;
@@ -85,6 +87,91 @@ export class SessionRepo {
     } catch (error) {
       throw new CustomError({
         message: `SessionRepo.getByKey() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async refresh(key: string): Promise<SessionData | null> {
+    try {
+      const session = await this.fastify.redis.get(key);
+      if (!session) return null;
+      const sessionData: SessionData = JSON.parse(session);
+      const now = Date.now();
+      const expires: Date = new Date(now + config.SESSION_MAX_AGE);
+      sessionData.lastAccess = new Date(now);
+      sessionData.cookie.expires = expires;
+      await this.fastify.redis.set(
+        key,
+        JSON.stringify(sessionData),
+        "PX",
+        expires.getTime() - Date.now()
+      );
+      return sessionData;
+    } catch (error: unknown) {
+      throw new CustomError({
+        message: `SessionRepo.refresh() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  private async findKeysByPattern(pattern: string) {
+    let cursor: string = "0";
+    const results: string[] = [];
+    try {
+      do {
+        const [nextCursor, keys] = await this.fastify.redis.scan(
+          cursor,
+          "MATCH",
+          pattern,
+          "COUNT",
+          SCAN_COUNT
+        );
+        cursor = nextCursor;
+        results.push(...keys);
+      } while (cursor !== "0");
+      return results;
+    } catch (error: unknown) {
+      throw new CustomError({
+        message: `SessionRepo.findKeysByPattern() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async findByUserId(userId: string): Promise<SessionData[]> {
+    const keys = await this.findKeysByPattern(
+      `${config.SESSION_KEY_NAME}:${userId}:*`
+    );
+
+    try {
+      const data: SessionData[] = [];
+      for (const key of keys) {
+        const session = await this.findByKey(key);
+        if (!session) continue;
+        data.push(session);
+      }
+
+      return data;
+    } catch (error) {
+      throw new CustomError({
+        message: `SessionRepo.findByUserId() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async deleteByKey(key: string) {
+    try {
+      await this.fastify.redis.del(key);
+    } catch (error) {
+      throw new CustomError({
+        message: `SessionRepo.deleteByKey() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });
