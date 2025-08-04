@@ -1,36 +1,10 @@
 import { FastifyInstance } from "fastify";
-import { getSessionsController } from "./session.controller";
+import {
+  deleteSessionsByIdController,
+  getSessionsController,
+} from "./session.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
-
-const sessionSchema = {
-  type: "array",
-  items: {
-    type: "object",
-    properties: {
-      id: { type: "string" },
-      provider: { type: "string", enum: ["google", "credential"] },
-      userId: { type: "string" },
-      cookie: {
-        type: "object",
-        properties: {
-          maxAge: { type: "number" },
-          expires: { type: "string", format: "date-time" },
-          httpOnly: { type: "boolean" },
-          path: { type: "string" },
-          domain: { type: "string" },
-          secure: { type: "boolean" },
-          sameSite: { type: ["boolean", "string"] },
-          priority: { type: "string", enum: ["low", "medium", "high"] },
-        },
-        additionalProperties: false,
-      },
-      ip: { type: "string" },
-
-      lastAccess: { type: "string", format: "date-time" },
-      createAt: { type: "string", format: "date-time" },
-    },
-  },
-};
+import { required } from "zod/v4/core/util.cjs";
 
 export default async function sessionRoutes(fastify: FastifyInstance) {
   fastify.get(
@@ -39,5 +13,22 @@ export default async function sessionRoutes(fastify: FastifyInstance) {
       preHandler: [requiredAuthMiddleware],
     },
     getSessionsController
+  );
+
+  fastify.delete(
+    "/:id",
+    {
+      schema: {
+        params: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+          },
+          required: ["id"],
+        },
+      },
+      preHandler: [requiredAuthMiddleware],
+    },
+    deleteSessionsByIdController
   );
 }
