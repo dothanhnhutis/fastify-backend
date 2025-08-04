@@ -1,15 +1,6 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import userRoutes from "./v1/user/user.routes";
-import authRoutes from "./v1/auth/auth.routes";
+import { FastifyInstance } from "fastify";
+import versionRoutes from "./v1";
 
 export default async function appRoutes(fastify: FastifyInstance) {
-  fastify.get("/health", (_: FastifyRequest, reply: FastifyReply) => {
-    reply.code(200).send({
-      status: "ok",
-      environment: "development",
-    });
-  });
-
-  fastify.register(authRoutes, { prefix: "/auth" });
-  fastify.register(userRoutes, { prefix: "/users" });
+  fastify.register(versionRoutes, { prefix: "/v1" });
 }

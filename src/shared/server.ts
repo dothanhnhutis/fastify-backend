@@ -13,6 +13,7 @@ import loggerPlugin from "./plugins/logger";
 import postgresDBPlugin from "./plugins/postgres";
 import redisPlugin from "./plugins/redis";
 import cookiePlugin from "./plugins/cookie";
+import sessionPlugin from "./plugins/session";
 import { errorHandler } from "./error-handler";
 
 // declare module "fastify" {
@@ -47,6 +48,11 @@ export async function buildServer() {
   fastify.register(cookiePlugin, {
     httpOnly: true,
     secure: config.NODE_ENV === "production",
+  });
+
+  fastify.register(sessionPlugin, {
+    secret: config.SESSION_SECRET_KEY,
+    cookieName: config.SESSION_KEY_NAME,
   });
 
   // Routes

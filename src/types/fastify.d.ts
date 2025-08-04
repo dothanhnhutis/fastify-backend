@@ -1,13 +1,22 @@
 interface CookieOptions {
   maxAge?: number;
-  // signed?: boolean;
   expires?: Date;
   httpOnly?: boolean;
   path?: string;
   domain?: string;
   secure?: boolean;
-  // encode?: (val: string) => string;
   sameSite?: boolean | "lax" | "strict" | "none";
   priority?: "low" | "medium" | "high";
+  // signed?: boolean;
   // partitioned?: boolean;
+  // encode?: (val: string) => string;
 }
+
+type User = {
+  id: string;
+  email: string;
+  password_hash: string;
+  username: string;
+  created_at: Date;
+  updated_at: Date;
+};

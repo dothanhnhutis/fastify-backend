@@ -26,7 +26,7 @@ export class CustomError<C extends string> extends Error {
     return {
       statusText: this.statusText,
       statusCode: this.statusCode,
-      message: this.message,
+      data: { message: this.message },
     };
   }
 }
@@ -49,6 +49,16 @@ export class BadRequestError extends CustomError<ErrorCode> {
   }
 }
 
+export class NotAuthorizedError extends CustomError<ErrorCode> {
+  constructor(message: string = "Authentication failed") {
+    super({
+      message,
+      statusCode: StatusCodes.UNAUTHORIZED,
+      statusText: "UNAUTHORIZED",
+    });
+  }
+}
+
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -62,7 +72,7 @@ export function getErrorMessage(error: unknown): string {
   return "An error occurred";
 }
 
-export function errorHandler(
+export async function errorHandler(
   error: FastifyError,
   _request: FastifyRequest,
   reply: FastifyReply
@@ -78,18 +88,10 @@ export function errorHandler(
   reply.status(500).send({
     statusText: "INTERNAL_SERVER_ERROR",
     statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
-    message:
-      getErrorMessage(error) ||
-      "An error occurred. Please view logs for more details",
+    data: {
+      message:
+        getErrorMessage(error) ||
+        "An error occurred. Please view logs for more details",
+    },
   });
-}
-
-export class DatabaseError extends CustomError<string> {
-  constructor(message: string) {
-    super({
-      message,
-      statusCode: StatusCodes.BAD_REQUEST,
-      statusText: "BAD_REQUEST",
-    });
-  }
 }

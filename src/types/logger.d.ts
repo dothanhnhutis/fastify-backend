@@ -1,5 +1,5 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { Logger } from "pino";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 
 export interface CustomLogger extends Logger {
   // Có thể extend thêm methods nếu cần

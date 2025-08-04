@@ -1,5 +1,5 @@
-import { FastifyInstance, FastifyPluginOptions, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
+import { FastifyInstance, FastifyRequest } from "fastify";
 
 async function cookie(fastify: FastifyInstance, options: CookieOptions = {}) {
   fastify.decorateRequest("cookies");

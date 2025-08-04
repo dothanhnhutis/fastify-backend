@@ -69,13 +69,22 @@ export class SessionRepo {
         cookie: cookieOpt,
       };
     } catch (error: unknown) {
-      // if (error instanceof Error) {
-      //   throw new RedisQueryError(
-      //     `SessionCache.create() method error: ${error.message}`
-      //   );
-      // }
       throw new CustomError({
-        message: `SessionCache.create() method error: Unknown error ${error}`,
+        message: `SessionRepo.create() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async getByKey(key: string): Promise<SessionData | null> {
+    try {
+      const sessionCache = await this.fastify.redis.get(key);
+      if (!sessionCache) return null;
+      return JSON.parse(sessionCache) as SessionData;
+    } catch (error) {
+      throw new CustomError({
+        message: `SessionRepo.getByKey() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });
