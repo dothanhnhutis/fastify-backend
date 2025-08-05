@@ -86,6 +86,7 @@ export async function errorHandler(
   _request: FastifyRequest,
   reply: FastifyReply
 ) {
+  console.log(error);
   if (error.code == "FST_ERR_VALIDATION" && error.validation) {
     reply.status(StatusCodes.BAD_REQUEST).send({
       statusText: "BAD_REQUEST",

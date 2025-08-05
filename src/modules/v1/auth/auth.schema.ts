@@ -1,4 +1,4 @@
-import z from "zod/v4";
+import * as z from "zod";
 import { FastifySchema } from "fastify";
 
 const signInBodySchema = z.object({
@@ -54,7 +54,7 @@ export const signInSchema: FastifySchema = {
         minLength: 1,
         maxLength: 125,
         pattern:
-          "/^(?=.*[a-z])(?=.*[A-Z])(?=.*d)(?=.*[@$!%*?&])[A-Za-zd@$!%*?&]*$/",
+          "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[@$!%*?&])[A-Za-z0-9@$!%*?&]+$",
         description: "Mật khẩu đăng nhập",
         errorMessage: {
           type: "Mật khẩu phải là chuỗi",
