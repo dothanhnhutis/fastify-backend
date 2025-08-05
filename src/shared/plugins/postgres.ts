@@ -6,6 +6,7 @@ import config from "../config";
 import { UserRepo } from "@/db/repositories/user.repo";
 import { StatusCodes } from "http-status-codes";
 import { CustomError } from "../error-handler";
+import { RoleRepo } from "@/db/repositories/role.repo";
 
 export interface PostgresDBOptions extends PoolConfig {}
 
@@ -119,6 +120,7 @@ async function postgresDB(
       }
     } finally {
       req.user = new UserRepo(req);
+      req.role = new RoleRepo(req);
     }
   });
 

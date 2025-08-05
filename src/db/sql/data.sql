@@ -1,16 +1,49 @@
 ---- chèn bằng file
-
 -- cách 1: chèm full trường
-COPY "User" FROM 'user_data.csv' DELIMITER ',' CSV;
-
+COPY users
+FROM 'user_data.csv' DELIMITER ',' CSV;
 --- cách 2: chèm có chọn field email, password_hash, username
-COPY "User" (email, password_hash, username)
-FROM '/data/user.csv'
-WITH (FORMAT csv, HEADER true, DELIMITER ',');
-
-
-
-UPDATE "User"
-SET password_hash = '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io'
+COPY users (email, password_hash, username)
+FROM '/data/user.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',');
+---
+UPDATE users
+SET password_hash = '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io',
+    username = 'new name'
 WHERE email = 'gaconght@gmail.com'
 RETURNING *;
+---
+INSERT INTO Roles (name, permissions)
+VALUES (
+        'Admin Role',
+        ARRAY ['create:role', 'read:role:*', 'delete:role', 'create:warehouse', 'read:warehouse:*', 'delete:warehouse']
+    ),
+    ('Kho', ARRAY ['read:warehouse:*'])
+RETURNING *;
+--- Find all Role
+SELECT *
+FROM roles;
+--- Find all User
+SELECT *
+FROM users;
+--- Add Role for User
+INSERT INTO user_roles (user_id, role_id)
+VALUES (
+        '8bc37a4c-d4a9-4a05-9fc7-be38d1a829e8',
+        '2ec09bf8-e9fb-4e6f-88cc-07ca69602610'
+    );
+--- Find Roles of User
+SELECT *
+FROM roles
+WHERE id IN (
+        SELECT role_id
+        FROM user_roles
+        WHERE user_id = '8bc37a4c-d4a9-4a05-9fc7-be38d1a829e8'
+    );
+---
+DELETE FROM roles
+WHERE id = '50cffaeb-1b75-4834-a18c-189b85f9c276';
+---
+DROP TABLE IF EXISTS packaging_transactions;
+---
+DROP TYPE IF EXISTS transaction_type ---
+ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_id_fkey;

@@ -6,7 +6,7 @@ export class UserRepo {
 
   async findByEmail(email: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM "User" WHERE email = $1 LIMIT 1`,
+      text: `SELECT * FROM users WHERE email = $1 LIMIT 1`,
       values: [email],
     };
     try {
@@ -23,7 +23,7 @@ export class UserRepo {
 
   async findById(id: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM "User" WHERE id = $1 LIMIT 1`,
+      text: `SELECT * FROM users WHERE id = $1 LIMIT 1`,
       values: [id],
     };
     try {
@@ -35,6 +35,23 @@ export class UserRepo {
         `UserRepo.findById() method error: ${err}`
       );
       return null;
+    }
+  }
+
+  async findRoles(userId: string): Promise<Role[]> {
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM roles WHERE id IN ( SELECT role_id FROM user_roles WHERE user_id = $1);`,
+      values: [userId],
+    };
+    try {
+      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
+      return rows ?? null;
+    } catch (err: unknown) {
+      this.req.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findRoles() method error: ${err}`
+      );
+      return [];
     }
   }
 }

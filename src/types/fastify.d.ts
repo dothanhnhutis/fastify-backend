@@ -20,3 +20,11 @@ type User = {
   created_at: Date;
   updated_at: Date;
 };
+
+type Role = {
+  id: string;
+  name: string;
+  permissions: string[];
+  created_at: Date;
+  updated_at: Date;
+};

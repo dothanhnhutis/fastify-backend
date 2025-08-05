@@ -59,6 +59,15 @@ export class NotAuthorizedError extends CustomError<ErrorCode> {
   }
 }
 
+export class PermissionError extends CustomError<ErrorCode> {
+  constructor(message = "Permission denied") {
+    super({
+      statusCode: StatusCodes.FORBIDDEN,
+      statusText: "FORBIDDEN",
+      message,
+    });
+  }
+}
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;

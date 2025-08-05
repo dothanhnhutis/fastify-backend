@@ -1,3 +1,4 @@
+import { RoleRepo } from "@/db/repositories/role.repo";
 import { UserRepo } from "@/db/repositories/user.repo";
 import { Pool, PoolClient } from "pg";
 
@@ -10,5 +11,6 @@ declare module "fastify" {
   interface FastifyRequest {
     pg: PoolClient;
     user: UserRepo;
+    role: RoleRepo;
   }
 }
