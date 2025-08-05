@@ -10,11 +10,20 @@ import redisPlugin from "./plugins/redis";
 import cookiePlugin from "./plugins/cookie";
 import sessionPlugin from "./plugins/session";
 import { errorHandler } from "./error-handler";
+import addFormats from "ajv-formats";
+import addErrors from "ajv-errors";
 
 export async function buildServer() {
   const fastify = Fastify({
     logger: false,
     trustProxy: true,
+    ajv: {
+      customOptions: {
+        allErrors: true,
+        coerceTypes: false,
+      },
+      plugins: [addErrors, addFormats],
+    },
   });
 
   fastify.register(fastifyHelmet);

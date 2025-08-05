@@ -11,6 +11,8 @@ import { z } from "zod/v4";
 export class RoleRepo {
   constructor(private req: FastifyRequest) {}
 
+  async query() {}
+
   async findById(id: string): Promise<Role | null> {
     if (!z.uuid().safeParse(id).success) return null;
 
@@ -47,7 +49,7 @@ export class RoleRepo {
     }
   }
 
-  async update(id: string, payload: UpdateRoleBodyType): Promise<Role> {
+  async update(id: string, payload: UpdateRoleBodyType): Promise<void> {
     const sets: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -61,8 +63,8 @@ export class RoleRepo {
       values.push(payload.permissions);
     }
 
-    if (sets.length === 0) {
-      return (await this.findById(id))!;
+    if (sets.length === 0 || !z.uuid().safeParse(id).success) {
+      return;
     }
 
     values.push(id);
@@ -73,11 +75,9 @@ export class RoleRepo {
       )} WHERE id = $${idx} RETURNING *;`,
       values,
     };
-    console.log(queryConfig);
 
     try {
-      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
-      return rows[0] ?? null;
+      await this.req.pg.query(queryConfig);
     } catch (error: unknown) {
       throw new CustomError({
         message: `RoleRepo.update() method error: ${error}`,

@@ -7,12 +7,13 @@ export async function createRoleController(
   req: FastifyRequest<{ Body: CreateRoleBodyType }>,
   reply: FastifyReply
 ) {
-  await req.role.create(req.body);
+  const role = await req.role.create(req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
     data: {
       message: "Tạo vai trò thành công.",
+      role,
     },
   });
 }

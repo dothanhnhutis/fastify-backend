@@ -2,6 +2,7 @@ import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import { FastifyInstance } from "fastify";
 import {
   createRoleController,
+  deleteRoleByIdController,
   findRoleByIdController,
   updateRoleByIdController,
 } from "./role.controller";
@@ -19,6 +20,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
     },
     findRoleByIdController
   );
+
   fastify.post(
     "/",
     {
@@ -27,6 +29,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
         requiredAuthMiddleware,
         checkPermissionMiddleware(["create:role"]),
       ],
+      attachValidation: true,
     },
     createRoleController
   );
@@ -41,5 +44,16 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       ],
     },
     updateRoleByIdController
+  );
+
+  fastify.delete(
+    "/:id",
+    {
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["delete:role"]),
+      ],
+    },
+    deleteRoleByIdController
   );
 }

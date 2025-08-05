@@ -86,6 +86,16 @@ export async function errorHandler(
   _request: FastifyRequest,
   reply: FastifyReply
 ) {
+  if (error.code == "FST_ERR_VALIDATION" && error.validation) {
+    reply.status(StatusCodes.BAD_REQUEST).send({
+      statusText: "BAD_REQUEST",
+      statusCode: StatusCodes.BAD_REQUEST,
+      data: {
+        message: error.validation[0].message ?? "Validate error",
+      },
+    });
+  }
+
   if (reply.sent || (reply.raw && reply.raw.headersSent) || config.DEBUG) {
     reply.status(StatusCodes.INTERNAL_SERVER_ERROR).send(error);
   }
