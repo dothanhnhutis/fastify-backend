@@ -1,7 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import { CreateRole } from "./role.schema";
+import { CreateRole, QueryRole } from "./role.schema";
 import { BadRequestError } from "@/shared/error-handler";
 
 export async function createRoleController(
@@ -36,18 +36,27 @@ export async function findRoleByIdController(
 }
 
 export async function queryRoleController(
-  req: FastifyRequest,
+  req: FastifyRequest<{
+    Querystring: QueryRole;
+  }>,
   reply: FastifyReply
 ) {
-  console.log("body", req.body);
-  console.log("query", req.query);
+  console.log("req.query", req.query);
+  console.log("req.body", req.body);
+
+  const data = await req.role.query({
+    // name: "Admin",
+    // permissions: ["read:warehouse:*", "read:role:*", ""],
+    // description: "",
+    // sorts: [{ field: "name", direction: "desc" }],
+    // limit: 1,
+    // page: 2,
+  });
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
-    data: {
-      roles: [],
-    },
+    data,
   });
 }
 

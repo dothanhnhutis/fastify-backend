@@ -1,3 +1,5 @@
+import { FastifySchema } from "fastify";
+
 export const getRoleByIdSchema = {
   params: {
     type: "object",
@@ -64,27 +66,14 @@ export const createRoleSchema = {
   },
 };
 
-export const queryRoleSchema = {
-  // query: {
-  //   type: "object",
-  //   properties: {
-  //     name: {
-
-  //     }
-  //   }
-  // },
-  body: {
+export const queryRoleSchema: FastifySchema = {
+  querystring: {
     type: "object",
     additionalProperties: false,
     properties: {
       name: {
         type: "string",
-        minLength: 1,
         description: "Tên vai trò",
-        errorMessage: {
-          type: "Tên vai trò phải là chuỗi",
-          minLength: "Tên vai trò không được bỏ trống",
-        },
       },
       permissions: {
         type: "array",
@@ -102,9 +91,6 @@ export const queryRoleSchema = {
         },
       },
     },
-    errorMessage: {
-      additionalProperties: "Body chứa field không hợp lệ",
-    },
   },
 };
 
@@ -121,8 +107,8 @@ export type UpdateRole = Partial<CreateRole>;
 export type QueryRole = {
   name?: string;
   permissions?: string[];
-  desciption?: string;
+  description?: string;
+  sorts?: { field: string; direction: "asc" | "desc" }[];
   limit?: number;
   page?: number;
-  sort?: { field: string; direction: "asc" | "desc" }[];
 };

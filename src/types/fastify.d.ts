@@ -47,3 +47,12 @@ type ReqInfo = {
   provider: "credential" | "google";
   cookie?: CookieOptions;
 };
+
+type Metadata = {
+  totalItem: number;
+  totalPage: number;
+  hasNextPage: number | boolean;
+  limit: number;
+  itemStart: number;
+  itemEnd: number;
+};

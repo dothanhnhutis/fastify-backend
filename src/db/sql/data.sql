@@ -56,9 +56,20 @@ WHERE id not IN (
 ---
 SELECT *
 FROM roles
-WHERE name ILIKE '%Manager update%';
+WHERE permissions = ALL('read:warehouse:*') -- WHERE name ILIKE '%Manager update%';
+    ---
+SELECT *
+FROM roles
+ORDER BY permissions DESC,
+    name ASC
+LIMIT 1 OFFSET 1;
 ---
 SELECT *
 FROM roles
-ORDER BY name ASC
-LIMIT 1 OFFSET 1;
+WHERE permissions @> ARRAY ['read:warehouse:*', 'read:role:*'];
+---
+SELECT *
+FROM (
+        SELECT *
+        FROM roles
+    );

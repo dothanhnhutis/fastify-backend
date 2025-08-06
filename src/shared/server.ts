@@ -1,6 +1,4 @@
 import Fastify from "fastify";
-import addErrors from "ajv-errors";
-import addFormats from "ajv-formats";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
@@ -18,14 +16,6 @@ export async function buildServer() {
   const fastify = Fastify({
     logger: false,
     trustProxy: true,
-    ajv: {
-      customOptions: {
-        allErrors: true,
-        coerceTypes: false,
-        strict: true,
-      },
-      plugins: [addErrors, addFormats],
-    },
   });
 
   fastify.register(fastifyHelmet);

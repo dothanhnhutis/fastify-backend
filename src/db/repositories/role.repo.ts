@@ -12,40 +12,87 @@ import {
 export class RoleRepo {
   constructor(private req: FastifyRequest) {}
 
-  async query(query: QueryRole) {
-    let text: string = `SELECT * FROM roles`;
-    const value: any[] = [];
+  async query(query: QueryRole): Promise<{
+    roles: Role[];
+    metadata: Metadata;
+  }> {
+    let queryString = ["SELECT * FROM roles"];
+    let queryCount = "SELECT count(*) FROM roles";
+    const values: any[] = [];
     let where: string[] = [];
     let idx = 1;
 
     if (query.name != undefined) {
-      where.push(`name ILIKE '%${idx}%'`);
-      value.push(query.name);
-      idx++;
+      where.push(`name ILIKE '%' || $${idx++}::text || '%'`);
+      values.push(query.name);
     }
 
     if (query.permissions != undefined) {
-      where.push(`permissions IN (${query.permissions.join(", ")})`);
-      value.push(query.permissions);
-      idx++;
+      where.push(`permissions @> $${idx++}::text[]`);
+      values.push(query.permissions);
     }
 
-    if (query.desciption != undefined) {
-      where.push(`desciption ILIKE '%${idx}%'`);
-      value.push(query.desciption);
-      idx++;
+    if (query.description != undefined) {
+      where.push(`description ILIKE '%' || $${idx++}::text || '%'`);
+      values.push(query.description);
     }
 
-    if (query.sort != undefined) {
+    if (where.length > 0) {
+      queryString.push(`WHERE ${where.join(" AND ")}`);
+      queryCount += `WHERE ${where.join(" AND ")}`;
     }
 
-    if (query.limit != undefined && query.page) {
+    const fieldAllow = ["name", "permissions", "permissions"];
+
+    if (query.sorts != undefined) {
+      queryString.push(
+        `ORDER BY ${query.sorts
+          .filter((sort) => fieldAllow.includes(sort.field))
+          .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+          .join(", ")}`
+      );
+    }
+
+    if (query.page != undefined) {
+      const limit = query.limit ?? 10;
+      const offset = (query.page - 1) * limit;
+      queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+      values.push(limit, offset);
     }
 
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM roles WHERE id = $1 LIMIT 1`,
-      values: [id],
+      text: queryString.join(" "),
+      values,
     };
+
+    try {
+      const { rows: roles } = await this.req.pg.query<Role>(queryConfig);
+      const { rows } = await this.req.pg.query<{ count: string }>({
+        text: queryCount,
+      });
+      const totalItem = parseInt(rows[0].count);
+      const limit = query.limit ?? totalItem;
+      const totalPage = Math.ceil(totalItem / limit);
+      const page = query.page ?? 1;
+
+      return {
+        roles,
+        metadata: {
+          totalItem,
+          totalPage,
+          hasNextPage: query.page ?? 1 < totalPage,
+          limit,
+          itemStart: (page - 1) * limit + 1,
+          itemEnd: Math.min(page * limit, totalItem),
+        },
+      };
+    } catch (error: any) {
+      throw new CustomError({
+        message: `RoleRepo.query() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
   }
 
   async findById(id: string): Promise<Role | null> {

@@ -6,7 +6,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/signin",
     {
-      schema: signInSchema,
+      preHandler: {
+        validateResource()
+      }
     },
     signInController
   );
