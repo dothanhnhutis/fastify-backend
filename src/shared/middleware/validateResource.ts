@@ -1,11 +1,13 @@
 import { ZodObject, ZodError } from "zod";
 import { BadRequestError } from "../error-handler";
 import { preHandlerMetaHookHandler } from "fastify/types/hooks";
-import { FastifyReply, FastifyRequest } from "fastify";
+import { FastifyReply, FastifyRequest, RouteGenericInterface } from "fastify";
 
 const validateResource =
-  (schema: ZodObject): preHandlerMetaHookHandler =>
-  async (req: FastifyRequest, reply: FastifyReply) => {
+  <T extends RouteGenericInterface>(
+    schema: ZodObject
+  ): preHandlerMetaHookHandler =>
+  async (req: FastifyRequest<T>, reply: FastifyReply) => {
     try {
       schema.parse({
         params: req.params,
