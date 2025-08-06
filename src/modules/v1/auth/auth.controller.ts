@@ -4,12 +4,12 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import config from "@/shared/config";
 import Password from "@/shared/password";
 import cryptoCookie from "@/shared/crypto";
-import { SignInBodyType } from "./auth.schema";
+import { SignInBody } from "./auth.schema";
 import { BadRequestError } from "@/shared/error-handler";
 
 export async function signInController(
   req: FastifyRequest<{
-    Body: SignInBodyType;
+    Body: SignInBody;
   }>,
   reply: FastifyReply
 ) {
@@ -29,7 +29,7 @@ export async function signInController(
     userAgentRaw: req.headers["user-agent"] || "",
   });
 
-  const encryptSession = cryptoCookie.encrypt(session.key);
+  const encryptSession = cryptoCookie.encrypt(session.sessionId);
 
   reply
     .code(StatusCodes.OK)

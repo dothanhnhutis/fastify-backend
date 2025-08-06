@@ -17,6 +17,9 @@ importers:
       '@fastify/helmet':
         specifier: ^13.0.1
         version: 13.0.1
+      ajv:
+        specifier: ^8.17.1
+        version: 8.17.1
       ajv-errors:
         specifier: ^3.0.0
         version: 3.0.0(ajv@8.17.1)

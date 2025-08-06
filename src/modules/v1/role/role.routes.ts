@@ -4,15 +4,35 @@ import {
   createRoleController,
   deleteRoleByIdController,
   findRoleByIdController,
+  queryRoleController,
   updateRoleByIdController,
 } from "./role.controller";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
-import { createRoleSchema, updateRoleSchema } from "./role.schema";
+import {
+  createRoleSchema,
+  deleteRoleByIdSchema,
+  getRoleByIdSchema,
+  queryRoleSchema,
+  updateRoleByIdSchema,
+} from "./role.schema";
 
 export default async function roleRoutes(fastify: FastifyInstance) {
   fastify.get(
+    "/",
+    {
+      schema: queryRoleSchema,
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["read:role:*"]),
+      ],
+    },
+    queryRoleController
+  );
+
+  fastify.get(
     "/:id",
     {
+      schema: getRoleByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:role:id"]),
@@ -29,7 +49,6 @@ export default async function roleRoutes(fastify: FastifyInstance) {
         requiredAuthMiddleware,
         checkPermissionMiddleware(["create:role"]),
       ],
-      attachValidation: true,
     },
     createRoleController
   );
@@ -37,7 +56,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
   fastify.patch(
     "/:id",
     {
-      schema: updateRoleSchema,
+      schema: updateRoleByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["update:role"]),
@@ -49,6 +68,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
   fastify.delete(
     "/:id",
     {
+      schema: deleteRoleByIdSchema,
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["delete:role"]),

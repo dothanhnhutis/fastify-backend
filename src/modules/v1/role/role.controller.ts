@@ -1,10 +1,11 @@
-import { FastifyReply, FastifyRequest } from "fastify";
-import { CreateRoleBodyType, UpdateRoleBodyType } from "./role.schema";
 import { StatusCodes } from "http-status-codes";
+import { FastifyReply, FastifyRequest } from "fastify";
+
+import { CreateRole } from "./role.schema";
 import { BadRequestError } from "@/shared/error-handler";
 
 export async function createRoleController(
-  req: FastifyRequest<{ Body: CreateRoleBodyType }>,
+  req: FastifyRequest<{ Body: CreateRole }>,
   reply: FastifyReply
 ) {
   const role = await req.role.create(req.body);
@@ -34,8 +35,27 @@ export async function findRoleByIdController(
   });
 }
 
+export async function queryRoleController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {
+  console.log("body", req.body);
+  console.log("query", req.query);
+
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      roles: [],
+    },
+  });
+}
+
 export async function updateRoleByIdController(
-  req: FastifyRequest<{ Params: { id: string }; Body: UpdateRoleBodyType }>,
+  req: FastifyRequest<{
+    Params: { id: string };
+    Body: Partial<{ name: string; permissions: string[] }>;
+  }>,
   reply: FastifyReply
 ) {
   const role = await req.role.findById(req.params.id);

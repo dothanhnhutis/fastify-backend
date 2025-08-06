@@ -1,17 +1,18 @@
 import Fastify from "fastify";
+import addErrors from "ajv-errors";
+import addFormats from "ajv-formats";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import fastifyCompress from "@fastify/compress";
-import appRoutes from "@/modules";
+
 import config from "./config";
+import appRoutes from "@/modules";
 import loggerPlugin from "./plugins/logger";
 import postgresDBPlugin from "./plugins/postgres";
 import redisPlugin from "./plugins/redis";
 import cookiePlugin from "./plugins/cookie";
 import sessionPlugin from "./plugins/session";
 import { errorHandler } from "./error-handler";
-import addFormats from "ajv-formats";
-import addErrors from "ajv-errors";
 
 export async function buildServer() {
   const fastify = Fastify({
@@ -21,6 +22,7 @@ export async function buildServer() {
       customOptions: {
         allErrors: true,
         coerceTypes: false,
+        strict: true,
       },
       plugins: [addErrors, addFormats],
     },

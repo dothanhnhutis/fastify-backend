@@ -1,5 +1,6 @@
 -- config database
-ALTER DATABASE pgdb
+ALTER DATABASE pgdb;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 SET datestyle = 'ISO, MDY';
 -- DROP TABLE IF EXISTS "PackagingTransaction";
 -- CreateTable
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS roles (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     permissions TEXT [],
+    description TEXT DEFAULT (''),
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT roles_pkey PRIMARY KEY (id)

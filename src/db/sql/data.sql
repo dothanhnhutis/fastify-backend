@@ -47,3 +47,18 @@ DROP TABLE IF EXISTS packaging_transactions;
 ---
 DROP TYPE IF EXISTS transaction_type ---
 ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_id_fkey;
+---
+DELETE FROM roles
+WHERE id not IN (
+        '2ec09bf8-e9fb-4e6f-88cc-07ca69602610',
+        '30217f60-dd5b-4ad9-a1a8-696fe7fde502'
+    );
+---
+SELECT *
+FROM roles
+WHERE name ILIKE '%Manager update%';
+---
+SELECT *
+FROM roles
+ORDER BY name ASC
+LIMIT 1 OFFSET 1;

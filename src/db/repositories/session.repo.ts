@@ -1,36 +1,20 @@
-import config from "@/shared/config";
-import { CustomError } from "@/shared/error-handler";
-import Helper from "@/shared/helper";
+import { UAParser } from "ua-parser-js";
 import { FastifyInstance } from "fastify";
 import { StatusCodes } from "http-status-codes";
-import { UAParser } from "ua-parser-js";
 
-type CacheSession = {
-  userId: string;
-  ip: string;
-  userAgentRaw: string;
-  provider: "credential" | "google";
-  cookie?: CookieOptions;
-};
-
-export type SessionData = {
-  id: string;
-  provider: "google" | "credential";
-  userId: string;
-  cookie: CookieOptions;
-  ip: string;
-  userAgent: UAParser.IResult;
-  lastAccess: Date;
-  createAt: Date;
-};
+import config from "@/shared/config";
+import Helper from "@/shared/helper";
+import { CustomError } from "@/shared/error-handler";
 
 const SCAN_COUNT = 100;
 
 export class SessionRepo {
   constructor(private fastify: FastifyInstance) {}
 
-  async create(session: CacheSession) {
-    const sessionId = await Helper.generateId();
+  async create(
+    data: ReqInfo
+  ): Promise<{ sessionId: string; cookie: CookieOptions }> {
+    const id = await Helper.generateId();
     const now = new Date();
 
     const cookieOpt: CookieOptions = {
@@ -38,36 +22,35 @@ export class SessionRepo {
       httpOnly: true,
       secure: config.NODE_ENV == "production",
       expires: new Date(now.getTime() + config.SESSION_MAX_AGE),
-      ...session.cookie,
+      ...data.cookie,
     };
+    const sessionId = `${config.SESSION_KEY_NAME}:${data.userId}:${id}`;
 
-    const data: SessionData = {
-      id: sessionId,
-      provider: session.provider,
-      userId: session.userId,
+    const session: Session = {
+      id,
+      provider: data.provider,
+      userId: data.userId,
       cookie: cookieOpt,
-      ip: session.ip,
-      userAgent: UAParser(session.userAgentRaw),
+      ip: data.ip,
+      userAgent: UAParser(data.userAgentRaw),
       lastAccess: now,
       createAt: now,
     };
 
-    const key = `${config.SESSION_KEY_NAME}:${session.userId}:${sessionId}`;
-
     try {
       if (cookieOpt.expires) {
         await this.fastify.redis.set(
-          key,
-          JSON.stringify(data),
+          sessionId,
+          JSON.stringify(session),
           "PX",
           cookieOpt.expires.getTime() - Date.now()
         );
       } else {
-        await this.fastify.redis.set(key, JSON.stringify(data));
+        await this.fastify.redis.set(sessionId, JSON.stringify(session));
       }
 
       return {
-        key,
+        sessionId,
         cookie: cookieOpt,
       };
     } catch (error: unknown) {
@@ -79,31 +62,31 @@ export class SessionRepo {
     }
   }
 
-  async findByKey(key: string): Promise<SessionData | null> {
+  async findById(id: string): Promise<Session | null> {
     try {
-      const sessionCache = await this.fastify.redis.get(key);
+      const sessionCache = await this.fastify.redis.get(id);
       if (!sessionCache) return null;
-      return JSON.parse(sessionCache) as SessionData;
+      return JSON.parse(sessionCache) as Session;
     } catch (error) {
       throw new CustomError({
-        message: `SessionRepo.getByKey() method error: ${error}`,
+        message: `SessionRepo.findById() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });
     }
   }
 
-  async refresh(key: string): Promise<SessionData | null> {
+  async refresh(id: string): Promise<Session | null> {
     try {
-      const session = await this.fastify.redis.get(key);
+      const session = await this.fastify.redis.get(id);
       if (!session) return null;
-      const sessionData: SessionData = JSON.parse(session);
+      const sessionData: Session = JSON.parse(session);
       const now = Date.now();
       const expires: Date = new Date(now + config.SESSION_MAX_AGE);
       sessionData.lastAccess = new Date(now);
       sessionData.cookie.expires = expires;
       await this.fastify.redis.set(
-        key,
+        id,
         JSON.stringify(sessionData),
         "PX",
         expires.getTime() - Date.now()
@@ -118,7 +101,13 @@ export class SessionRepo {
     }
   }
 
-  private async findKeysByPattern(pattern: string) {
+  /**
+   * TODO: RedisCustom extend Redis
+   * RedisCustom.findKeysByPattern
+   * @param pattern
+   * @returns
+   */
+  private async findKeysByPattern(pattern: string): Promise<string[]> {
     let cursor: string = "0";
     const results: string[] = [];
     try {
@@ -142,16 +131,20 @@ export class SessionRepo {
       });
     }
   }
-
-  async findByUserId(userId: string): Promise<SessionData[]> {
-    const keys = await this.findKeysByPattern(
+  /**
+   * TODO: chuyển sang UserRepo
+   * @param userId string
+   * @returns Promise<Session[]>
+   */
+  async findByUserId(userId: string): Promise<Session[]> {
+    const sessionIds = await this.findKeysByPattern(
       `${config.SESSION_KEY_NAME}:${userId}:*`
     );
 
     try {
-      const data: SessionData[] = [];
-      for (const key of keys) {
-        const session = await this.findByKey(key);
+      const data: Session[] = [];
+      for (const id of sessionIds) {
+        const session = await this.findById(id);
         if (!session) continue;
         data.push(session);
       }
@@ -166,12 +159,12 @@ export class SessionRepo {
     }
   }
 
-  async deleteByKey(key: string) {
+  async delete(id: string): Promise<void> {
     try {
-      await this.fastify.redis.del(key);
+      await this.fastify.redis.del(id);
     } catch (error) {
       throw new CustomError({
-        message: `SessionRepo.deleteByKey() method error: ${error}`,
+        message: `SessionRepo.delete() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });

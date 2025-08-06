@@ -26,16 +26,16 @@ export async function deleteSessionsByIdController(
   const { id } = req.params;
   const { id: userId } = req.currUser!;
 
-  const key = `${config.SESSION_KEY_NAME}:${userId}:${id}`;
-  const session = await req.session.findByKey(key);
+  const sessionId = `${config.SESSION_KEY_NAME}:${userId}:${id}`;
+  const session = await req.session.findById(sessionId);
 
   if (!session || session.userId != userId)
     throw new BadRequestError("Phiên không tồn tại");
 
-  if (key == req.sessionKey)
+  if (sessionId == req.sessionId)
     throw new BadRequestError("Không thể xoá phiên hiện tại");
 
-  await req.session.deleteByKey(key);
+  await req.session.delete(sessionId);
 
   reply.code(StatusCodes.OK).send({
     data: { message: "Xoá phiên thành công" },

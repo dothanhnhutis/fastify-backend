@@ -20,20 +20,20 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
     async (req: FastifyRequest, res: FastifyReply) => {
       const session = req.cookies.get(cookieName);
       if (!session) return;
-      const sessionKey = cryptoCookie.decrypt(session);
-      const sessionData = await req.session.findByKey(sessionKey);
+      const sessionId = cryptoCookie.decrypt(session);
+      const sessionData = await req.session.findById(sessionId);
       if (!sessionData) return;
       const user = await req.user.findById(sessionData.userId);
       if (!user) {
         res.clearCookie(config.SESSION_KEY_NAME);
       } else {
-        req.sessionKey = sessionKey;
-        const refreshSession = await req.session.refresh(sessionKey);
+        req.sessionId = sessionId;
+        const refreshSession = await req.session.refresh(sessionId);
         req.currUser = user;
         if (refreshSession) {
           res.setCookie(
             config.SESSION_KEY_NAME,
-            cryptoCookie.encrypt(sessionKey),
+            cryptoCookie.encrypt(sessionId),
             refreshSession.cookie
           );
         }

@@ -1,21 +1,54 @@
-import {
-  CreateRoleBodyType,
-  UpdateRoleBodyType,
-} from "@/modules/v1/role/role.schema";
-import { CustomError } from "@/shared/error-handler";
 import { FastifyRequest } from "fastify";
-import { StatusCodes } from "http-status-codes";
 import { QueryConfig, QueryResult } from "pg";
-import { z } from "zod/v4";
+import { StatusCodes } from "http-status-codes";
+
+import { CustomError } from "@/shared/error-handler";
+import {
+  CreateRole,
+  QueryRole,
+  UpdateRole,
+} from "@/modules/v1/role/role.schema";
 
 export class RoleRepo {
   constructor(private req: FastifyRequest) {}
 
-  async query() {}
+  async query(query: QueryRole) {
+    let text: string = `SELECT * FROM roles`;
+    const value: any[] = [];
+    let where: string[] = [];
+    let idx = 1;
+
+    if (query.name != undefined) {
+      where.push(`name ILIKE '%${idx}%'`);
+      value.push(query.name);
+      idx++;
+    }
+
+    if (query.permissions != undefined) {
+      where.push(`permissions IN (${query.permissions.join(", ")})`);
+      value.push(query.permissions);
+      idx++;
+    }
+
+    if (query.desciption != undefined) {
+      where.push(`desciption ILIKE '%${idx}%'`);
+      value.push(query.desciption);
+      idx++;
+    }
+
+    if (query.sort != undefined) {
+    }
+
+    if (query.limit != undefined && query.page) {
+    }
+
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM roles WHERE id = $1 LIMIT 1`,
+      values: [id],
+    };
+  }
 
   async findById(id: string): Promise<Role | null> {
-    if (!z.uuid().safeParse(id).success) return null;
-
     const queryConfig: QueryConfig = {
       text: `SELECT * FROM roles WHERE id = $1 LIMIT 1`,
       values: [id],
@@ -32,10 +65,24 @@ export class RoleRepo {
     }
   }
 
-  async create({ name, permissions }: CreateRoleBodyType): Promise<Role> {
+  async create(data: CreateRole): Promise<Role> {
+    const columns = ["name", "permissions"];
+    const values = [data.name, data.permissions];
+    const placeholders = ["$1::text", "$2::text[]"];
+    let idx = values.length;
+
+    if (data.description !== undefined) {
+      idx++;
+      columns.push("description");
+      values.push(data.description);
+      placeholders.push(`$${idx}::text`);
+    }
+
     const queryConfig: QueryConfig = {
-      text: `INSERT INTO roles (name, permissions) VALUES ($1,  $2::text[]) RETURNING *;`,
-      values: [name, permissions],
+      text: `INSERT INTO roles (${columns.join(
+        ", "
+      )}) VALUES (${placeholders.join(", ")}) RETURNING *;`,
+      values,
     };
     try {
       const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
@@ -49,21 +96,25 @@ export class RoleRepo {
     }
   }
 
-  async update(id: string, payload: UpdateRoleBodyType): Promise<void> {
+  async update(id: string, data: UpdateRole): Promise<void> {
     const sets: string[] = [];
     const values: any[] = [];
     let idx = 1;
 
-    if (payload.name !== undefined) {
+    if (data.name !== undefined) {
       sets.push(`"name" = $${idx++}`);
-      values.push(payload.name);
+      values.push(data.name);
     }
-    if (payload.permissions !== undefined) {
+    if (data.permissions !== undefined) {
       sets.push(`"permissions" = $${idx++}::text[]`);
-      values.push(payload.permissions);
+      values.push(data.permissions);
+    }
+    if (data.description !== undefined) {
+      sets.push(`"description" = $${idx++}::text[]`);
+      values.push(data.description);
     }
 
-    if (sets.length === 0 || !z.uuid().safeParse(id).success) {
+    if (sets.length === 0) {
       return;
     }
 
