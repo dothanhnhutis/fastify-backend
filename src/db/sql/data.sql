@@ -28,8 +28,8 @@ FROM users;
 --- Add Role for User
 INSERT INTO user_roles (user_id, role_id)
 VALUES (
-        '8bc37a4c-d4a9-4a05-9fc7-be38d1a829e8',
-        '2ec09bf8-e9fb-4e6f-88cc-07ca69602610'
+        '09a2d9aa-2981-4fcf-8084-9704ab5043c4',
+        'fdec3bd0-5753-4c16-9917-41fcf182eeb3'
     );
 --- Find Roles of User
 SELECT *
@@ -37,7 +37,7 @@ FROM roles
 WHERE id IN (
         SELECT role_id
         FROM user_roles
-        WHERE user_id = '8bc37a4c-d4a9-4a05-9fc7-be38d1a829e8'
+        WHERE user_id = '09a2d9aa-2981-4fcf-8084-9704ab5043c4'
     );
 ---
 DELETE FROM roles

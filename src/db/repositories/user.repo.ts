@@ -6,11 +6,12 @@ export class UserRepo {
 
   async findByEmail(email: string): Promise<User | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM users WHERE email = $1 LIMIT 1`,
+      text: `SELECT * FROM users WHERE email = $1 LIMIT 1;`,
       values: [email],
     };
+
     try {
-      const { rows }: QueryResult<User> = await this.req.pg.query(queryConfig);
+      const { rows } = await this.req.pg.query<User>(queryConfig);
       return rows[0] ?? null;
     } catch (err: unknown) {
       this.req.logger.error(

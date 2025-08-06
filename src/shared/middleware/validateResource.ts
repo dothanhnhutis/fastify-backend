@@ -3,24 +3,27 @@ import { BadRequestError } from "../error-handler";
 import { preHandlerMetaHookHandler } from "fastify/types/hooks";
 import { FastifyReply, FastifyRequest, RouteGenericInterface } from "fastify";
 
-const validateResource =
-  <T extends RouteGenericInterface>(
-    schema: ZodObject
-  ): preHandlerMetaHookHandler =>
-  async (req: FastifyRequest<T>, reply: FastifyReply) => {
-    try {
-      schema.parse({
-        params: req.params,
-        body: req.body,
-        query: req.query,
-      });
-    } catch (error: unknown) {
-      if (error instanceof ZodError) {
-        throw new BadRequestError(
-          `${error.issues[0].message}. At: ${error.issues[0].path.toString()}`
-        );
-      }
-      throw error;
+export default function validateResource(schema: ZodObject) {
+  return async <T extends RouteGenericInterface>(
+    req: FastifyRequest<T>,
+    _reply: FastifyReply
+  ) => {
+    const { success, data, error } = schema.safeParse({
+      params: req.params,
+      body: req.body,
+      query: req.query,
+    });
+    if (success) {
+      req = {
+        ...req,
+        ...data,
+      };
+    } else {
+      throw new BadRequestError(
+        `validateResource middleware error: ${
+          error.issues[0].message
+        }. At: ${error.issues[0].path.toString()}`
+      );
     }
   };
-export default validateResource;
+}

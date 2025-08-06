@@ -4,12 +4,12 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import config from "@/shared/config";
 import Password from "@/shared/password";
 import cryptoCookie from "@/shared/crypto";
-import { SignInBody } from "./auth.schema";
 import { BadRequestError } from "@/shared/error-handler";
+import { SignInType } from "./auth.schema";
 
 export async function signInController(
   req: FastifyRequest<{
-    Body: SignInBody;
+    Body: SignInType["body"];
   }>,
   reply: FastifyReply
 ) {
