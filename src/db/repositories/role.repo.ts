@@ -17,63 +17,61 @@ export class RoleRepo {
     metadata: Metadata;
   }> {
     let queryString = ["SELECT * FROM roles"];
-    let queryCount = "SELECT count(*) FROM roles";
     const values: any[] = [];
     let where: string[] = [];
     let idx = 1;
 
-    if (query.name != undefined) {
-      where.push(`name ILIKE $${idx++}`);
-      values.push(`%${query.name.trim()}%`);
-    }
-
-    if (query.permissions != undefined) {
-      where.push(`permissions @> $${idx++}::text[]`);
-      values.push(query.permissions);
-    }
-
-    if (query.description != undefined) {
-      where.push(`description ILIKE '%' || $${idx++}::text || '%'`);
-      values.push(query.description);
-    }
-
-    if (where.length > 0) {
-      queryString.push(`WHERE ${where.join(" AND ")}`);
-      queryCount += `WHERE ${where.join(" AND ")}`;
-    }
-
-    const fieldAllow = ["name", "permissions", "permissions"];
-
-    if (query.sorts != undefined) {
-      queryString.push(
-        `ORDER BY ${query.sorts
-          .filter((sort) => fieldAllow.includes(sort.field))
-          .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
-          .join(", ")}`
-      );
-    }
-
-    if (query.page != undefined) {
-      const limit = query.limit ?? 10;
-      const offset = (query.page - 1) * limit;
-      queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
-      values.push(limit, offset);
-    }
-
-    const queryConfig: QueryConfig = {
-      text: queryString.join(" "),
-      values,
-    };
-
-    console.log(queryConfig);
-
     try {
-      const { rows: roles } = await this.req.pg.query<Role>(queryConfig);
+      if (query.name != undefined) {
+        where.push(`name ILIKE $${idx++}::text`);
+        values.push(`%${query.name.trim()}%`);
+      }
+
+      if (query.permissions != undefined) {
+        where.push(`permissions @> $${idx++}::text[]`);
+        values.push(query.permissions);
+      }
+
+      if (query.description != undefined) {
+        where.push(`description ILIKE $${idx++}::text`);
+        values.push(`%${query.description.trim()}%`);
+      }
+
+      if (where.length > 0) {
+        queryString.push(`WHERE ${where.join(" AND ")}`);
+      }
+
       const { rows } = await this.req.pg.query<{ count: string }>({
-        text: queryCount,
+        text: queryString.join(" ").replace("*", "count(*)"),
+        values,
       });
       const totalItem = parseInt(rows[0].count);
-      const limit = query.limit ?? totalItem;
+
+      const fieldAllow = ["name", "permissions", "permissions"];
+
+      if (query.sorts != undefined) {
+        queryString.push(
+          `ORDER BY ${query.sorts
+            .filter((sort) => fieldAllow.includes(sort.field))
+            .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+            .join(", ")}`
+        );
+      }
+      const limit = query.limit ?? 10;
+      if (query.page != undefined) {
+        const offset = (query.page - 1) * limit;
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+      }
+
+      const queryConfig: QueryConfig = {
+        text: queryString.join(" "),
+        values,
+      };
+
+      const { rows: roles } = await this.req.pg.query<Role>(queryConfig);
+
+      // const limit = query.limit ?? totalItem;
       const totalPage = Math.ceil(totalItem / limit);
       const page = query.page ?? 1;
 
@@ -82,7 +80,7 @@ export class RoleRepo {
         metadata: {
           totalItem,
           totalPage,
-          hasNextPage: query.page ?? 1 < totalPage,
+          hasNextPage: page < totalPage,
           limit,
           itemStart: (page - 1) * limit + 1,
           itemEnd: Math.min(page * limit, totalItem),

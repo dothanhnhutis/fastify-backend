@@ -15,7 +15,7 @@ RETURNING *;
 INSERT INTO Roles (name, permissions)
 VALUES (
         'Admin Role',
-        ARRAY ['create:role', 'read:role:*', 'delete:role', 'create:warehouse', 'read:warehouse:*', 'delete:warehouse']
+        ARRAY ['create:role', 'read:role:*', 'read:role:id','delete:role', 'create:warehouse', 'read:warehouse:*', 'delete:warehouse']
     ),
     ('Kho', ARRAY ['read:warehouse:*'])
 RETURNING *;
@@ -45,7 +45,8 @@ WHERE id = '50cffaeb-1b75-4834-a18c-189b85f9c276';
 ---
 DROP TABLE IF EXISTS packaging_transactions;
 ---
-DROP TYPE IF EXISTS transaction_type ---
+DROP TYPE IF EXISTS transaction_type 
+---
 ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_id_fkey;
 ---
 DELETE FROM roles
@@ -56,8 +57,9 @@ WHERE id not IN (
 ---
 SELECT *
 FROM roles
-WHERE permissions = ALL('read:warehouse:*') -- WHERE name ILIKE '%Manager update%';
-    ---
+WHERE permissions = ALL('read:warehouse:*') 
+-- WHERE name ILIKE '%Manager update%';
+---
 SELECT *
 FROM roles
 ORDER BY permissions DESC,

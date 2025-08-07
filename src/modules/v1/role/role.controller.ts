@@ -45,14 +45,7 @@ export async function queryRoleController(
   }>,
   reply: FastifyReply
 ) {
-  const data = await req.role.query({
-    name: "Admin",
-    // permissions: ["read:warehouse:*", "read:role:*", ""],
-    // description: "",
-    // sorts: [{ field: "name", direction: "desc" }],
-    // limit: 1,
-    // page: 2,
-  });
+  const data = await req.role.query(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
