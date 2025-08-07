@@ -4,15 +4,15 @@ import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "@/shared/error-handler";
 import {
-  CreateRole,
-  QueryRole,
-  UpdateRole,
+  CreateRoleType,
+  QueryRoleType,
+  UpdateRoleByIdType,
 } from "@/modules/v1/role/role.schema";
 
 export class RoleRepo {
   constructor(private req: FastifyRequest) {}
 
-  async query(query: QueryRole): Promise<{
+  async query(query: QueryRoleType): Promise<{
     roles: Role[];
     metadata: Metadata;
   }> {
@@ -23,8 +23,8 @@ export class RoleRepo {
     let idx = 1;
 
     if (query.name != undefined) {
-      where.push(`name ILIKE '%' || $${idx++}::text || '%'`);
-      values.push(query.name);
+      where.push(`name ILIKE $${idx++}`);
+      values.push(`%${query.name.trim()}%`);
     }
 
     if (query.permissions != undefined) {
@@ -64,6 +64,8 @@ export class RoleRepo {
       text: queryString.join(" "),
       values,
     };
+
+    console.log(queryConfig);
 
     try {
       const { rows: roles } = await this.req.pg.query<Role>(queryConfig);
@@ -112,7 +114,7 @@ export class RoleRepo {
     }
   }
 
-  async create(data: CreateRole): Promise<Role> {
+  async create(data: CreateRoleType["body"]): Promise<Role> {
     const columns = ["name", "permissions"];
     const values = [data.name, data.permissions];
     const placeholders = ["$1::text", "$2::text[]"];
@@ -143,7 +145,7 @@ export class RoleRepo {
     }
   }
 
-  async update(id: string, data: UpdateRole): Promise<void> {
+  async update(id: string, data: UpdateRoleByIdType["body"]): Promise<void> {
     const sets: string[] = [];
     const values: any[] = [];
     let idx = 1;

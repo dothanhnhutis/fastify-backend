@@ -8,7 +8,11 @@ import {
   updateRoleByIdController,
 } from "./role.controller";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
-import { createRoleSchema, getRoleByIdSchema } from "./role.schema";
+import {
+  createRoleSchema,
+  getRoleByIdSchema,
+  queryRoleSchema,
+} from "./role.schema";
 import validateResource from "@/shared/middleware/validateResource";
 
 export default async function roleRoutes(fastify: FastifyInstance) {
@@ -18,7 +22,7 @@ export default async function roleRoutes(fastify: FastifyInstance) {
       preHandler: [
         requiredAuthMiddleware,
         checkPermissionMiddleware(["read:role:*"]),
-        // validateResource(queryRoleSchema),
+        validateResource(queryRoleSchema),
       ],
     },
     queryRoleController

@@ -1,7 +1,8 @@
+import { customIntSchema, sortSchema } from "@/shared/utils";
 import z from "zod";
 
 export const createRoleSchema = z.object({
-  body: z.object({
+  body: z.strictObject({
     name: z
       .string({
         error: (iss) => {
@@ -65,115 +66,38 @@ export const getRoleByIdSchema = z.object({
 export const deleteRoleByIdSchema = getRoleByIdSchema;
 
 export const updateRoleByIdSchema = getRoleByIdSchema.extend({
+  params: getRoleByIdSchema.shape.params,
   body: createRoleSchema.shape.body.partial(),
+});
+
+export const queryRoleSchema = z.object({
+  query: z
+    .object({
+      name: z.union([
+        z.string(),
+        z.array(z.string()).pipe(z.transform((v) => v.reverse()[0])),
+      ]),
+      permissions: z.union([
+        z.string().pipe(z.transform((v) => [v])),
+        z.array(z.string()),
+      ]),
+      description: z.union([
+        z.string(),
+        z.array(z.string()).pipe(z.transform((v) => v.reverse()[0])),
+      ]),
+      sorts: sortSchema(["name", "permissions", "description"]),
+      limit: customIntSchema(),
+      page: customIntSchema(),
+    })
+    .partial(),
 });
 
 export type CreateRoleType = z.infer<typeof createRoleSchema>;
 export type GetRoleByIdType = z.infer<typeof getRoleByIdSchema>;
 export type DeleteRoleByIdType = z.infer<typeof deleteRoleByIdSchema>;
+export type UpdateRoleByIdType = z.infer<typeof updateRoleByIdSchema>;
 
-// export const queryRoleSchema = z.object({
-//   query: z.object({}),
-// });
-
-// export const getRoleByIdSchema = {
-//   params: {
-//     type: "object",
-//     properties: {
-//       id: {
-//         type: "string",
-//         format: "uuid",
-//         errorMessage: {
-//           format: "Vai trò không tồn tại.",
-//         },
-//       },
-//     },
-//   },
-// };
-
-// export const updateRoleByIdSchema = {
-//   params: getRoleByIdSchema.params,
-//   body: {
-//     type: "object",
-//     additionalProperties: false,
-//     properties: {
-//       name: {
-//         type: "string",
-//         minLength: 1,
-//         description: "Tên vai trò",
-//         errorMessage: {
-//           type: "Tên vai trò phải là chuỗi",
-//           minLength: "Tên vai trò không được bỏ trống",
-//         },
-//       },
-//       description: {
-//         type: "string",
-//         description: "Mô tả vai trò",
-//         errorMessage: {
-//           type: "Mô tả vai trò phải là chuỗi",
-//         },
-//       },
-//       permissions: {
-//         type: "array",
-//         minItems: 1,
-//         description: "Quyền của vai trò",
-//         items: {
-//           type: "string",
-//           errorMessage: {
-//             type: "Quyền truy cập phải là chuỗi",
-//           },
-//         },
-//         errorMessage: {
-//           type: "Quyền truy cập phải là mảng chuỗi",
-//           minItems: "Quyền truy cập không được bỏ trống",
-//         },
-//       },
-//     },
-//     errorMessage: {
-//       additionalProperties: "Body chứa field không hợp lệ",
-//     },
-//   },
-// };
-
-// export const queryRoleSchema: FastifySchema = {
-//   querystring: {
-//     type: "object",
-//     additionalProperties: false,
-//     properties: {
-//       name: {
-//         type: "string",
-//         description: "Tên vai trò",
-//       },
-//       permissions: {
-//         type: "array",
-//         minItems: 1,
-//         description: "Quyền của vai trò",
-//         items: {
-//           type: "string",
-//           errorMessage: {
-//             type: "Quyền truy cập phải là chuỗi",
-//           },
-//         },
-//         errorMessage: {
-//           type: "Quyền truy cập phải là mảng chuỗi",
-//           minItems: "Quyền truy cập không được bỏ trống",
-//         },
-//       },
-//     },
-//   },
-// };
-
-// export const deleteRoleByIdSchema = getRoleByIdSchema;
-
-export type CreateRole = {
-  name: string;
-  permissions: string[];
-  description?: string;
-};
-
-export type UpdateRole = Partial<CreateRole>;
-
-export type QueryRole = {
+export type QueryRoleType = {
   name?: string;
   permissions?: string[];
   description?: string;

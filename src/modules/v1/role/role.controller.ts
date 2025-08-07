@@ -1,11 +1,15 @@
 import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import { CreateRole, QueryRole } from "./role.schema";
+import {
+  CreateRoleType,
+  QueryRoleType,
+  UpdateRoleByIdType,
+} from "./role.schema";
 import { BadRequestError } from "@/shared/error-handler";
 
 export async function createRoleController(
-  req: FastifyRequest<{ Body: CreateRole }>,
+  req: FastifyRequest<{ Body: CreateRoleType["body"] }>,
   reply: FastifyReply
 ) {
   const role = await req.role.create(req.body);
@@ -37,15 +41,12 @@ export async function findRoleByIdController(
 
 export async function queryRoleController(
   req: FastifyRequest<{
-    Querystring: QueryRole;
+    Querystring: QueryRoleType;
   }>,
   reply: FastifyReply
 ) {
-  console.log("req.query", req.query);
-  console.log("req.body", req.body);
-
   const data = await req.role.query({
-    // name: "Admin",
+    name: "Admin",
     // permissions: ["read:warehouse:*", "read:role:*", ""],
     // description: "",
     // sorts: [{ field: "name", direction: "desc" }],
@@ -62,8 +63,8 @@ export async function queryRoleController(
 
 export async function updateRoleByIdController(
   req: FastifyRequest<{
-    Params: { id: string };
-    Body: Partial<{ name: string; permissions: string[] }>;
+    Params: UpdateRoleByIdType["params"];
+    Body: UpdateRoleByIdType["body"];
   }>,
   reply: FastifyReply
 ) {

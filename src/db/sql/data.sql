@@ -69,7 +69,4 @@ FROM roles
 WHERE permissions @> ARRAY ['read:warehouse:*', 'read:role:*'];
 ---
 SELECT *
-FROM (
-        SELECT *
-        FROM roles
-    );
+FROM roles

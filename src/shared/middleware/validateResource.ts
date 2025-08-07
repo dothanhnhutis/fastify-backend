@@ -1,6 +1,5 @@
-import { ZodObject, ZodError } from "zod";
+import { ZodObject } from "zod";
 import { BadRequestError } from "../error-handler";
-import { preHandlerMetaHookHandler } from "fastify/types/hooks";
 import { FastifyReply, FastifyRequest, RouteGenericInterface } from "fastify";
 
 export default function validateResource(schema: ZodObject) {
@@ -11,13 +10,15 @@ export default function validateResource(schema: ZodObject) {
     const { success, data, error } = schema.safeParse({
       params: req.params,
       body: req.body,
-      query: req.query,
+      query: Object.assign({}, req.query),
     });
+    console.log("req.query1", Object.assign({}, req.query));
+
     if (success) {
-      req = {
-        ...req,
-        ...data,
-      };
+      req.params = data.params;
+      req.body = data.body;
+      req.query = data.query;
+      console.log("data.query", data.query);
     } else {
       throw new BadRequestError(
         `validateResource middleware error: ${
