@@ -48,7 +48,6 @@ export class RoleRepo {
       const totalItem = parseInt(rows[0].count);
 
       const fieldAllow = ["name", "permissions", "permissions"];
-
       if (query.sorts != undefined) {
         queryString.push(
           `ORDER BY ${query.sorts
@@ -57,8 +56,9 @@ export class RoleRepo {
             .join(", ")}`
         );
       }
-      const limit = query.limit ?? 10;
+
       if (query.page != undefined) {
+        const limit = query.limit ?? totalItem;
         const offset = (query.page - 1) * limit;
         queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
         values.push(limit, offset);
@@ -71,7 +71,7 @@ export class RoleRepo {
 
       const { rows: roles } = await this.req.pg.query<Role>(queryConfig);
 
-      // const limit = query.limit ?? totalItem;
+      const limit = query.limit ?? totalItem;
       const totalPage = Math.ceil(totalItem / limit);
       const page = query.page ?? 1;
 
@@ -119,10 +119,9 @@ export class RoleRepo {
     let idx = values.length;
 
     if (data.description !== undefined) {
-      idx++;
       columns.push("description");
       values.push(data.description);
-      placeholders.push(`$${idx}::text`);
+      placeholders.push(`$${idx++}::text`);
     }
 
     const queryConfig: QueryConfig = {

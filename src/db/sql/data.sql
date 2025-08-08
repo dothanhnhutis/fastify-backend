@@ -30,6 +30,10 @@ INSERT INTO user_roles (user_id, role_id)
 VALUES (
         '09a2d9aa-2981-4fcf-8084-9704ab5043c4',
         'fdec3bd0-5753-4c16-9917-41fcf182eeb3'
+    ),
+    (
+        '09a2d9aa-2981-4fcf-8084-9704ab5043c4',
+        'fdec3bd0-5753-4c16-9917-41fcf182eeb3'
     );
 --- Find Roles of User
 SELECT *

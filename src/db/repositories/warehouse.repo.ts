@@ -1,0 +1,127 @@
+import { FastifyRequest } from "fastify";
+import { QueryConfig, QueryResult } from "pg";
+import { StatusCodes } from "http-status-codes";
+
+import { CustomError } from "@/shared/error-handler";
+
+export class WarehouseRepo {
+  constructor(private req: FastifyRequest) {}
+
+  async findById(id: string): Promise<Warehouse | null> {
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM warehouses WHERE id = $1 LIMIT 1`,
+      values: [id],
+    };
+    try {
+      const { rows }: QueryResult<Warehouse> =
+        await this.req.pg.query<Warehouse>(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: any) {
+      throw new CustomError({
+        message: `WarehouseRepo.findById() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async create(data: { name: string; address: string }): Promise<Warehouse> {
+    const queryConfig: QueryConfig = {
+      text: `INSERT INTO warehouses (name, address) VALUES ($1::text, $2::text) RETURNING *;`,
+      values: [data.name, data.address],
+    };
+    try {
+      await this.req.pg.query("BEGIN");
+      const { rows }: QueryResult<Warehouse> =
+        await this.req.pg.query<Warehouse>(queryConfig);
+
+      const { rows: packagings } = await this.req.pg.query({
+        text: `SELECT * FROM packagings`,
+      });
+
+      if (packagings.length > 0) {
+        const values: string[] = [];
+        const placeholders = packagings
+          .map((p, i) => {
+            const baseIndex = i * 2;
+            values.push(rows[0].id, p.id);
+            return `($${baseIndex + 1}, $${baseIndex + 2}`;
+          })
+          .join(", ");
+
+        await this.req.pg.query({
+          text: `INSET INTO packaging_stock_items (warehouse_id, packaging_id) VALUES ${placeholders}`,
+        });
+      }
+
+      await this.req.pg.query("COMMIT");
+      return rows[0] ?? null;
+    } catch (error: unknown) {
+      await this.req.pg.query("ROLLBACK");
+      throw new CustomError({
+        message: `WarehouseRepo.create() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async update(
+    id: string,
+    data: Partial<{ name: string; address: string }>
+  ): Promise<void> {
+    const sets: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (data.name !== undefined) {
+      sets.push(`"name" = $${idx++}`);
+      values.push(data.name);
+    }
+
+    if (data.address !== undefined) {
+      sets.push(`"address" = $${idx++}`);
+      values.push(data.address);
+    }
+
+    if (sets.length === 0) {
+      return;
+    }
+
+    values.push(id);
+
+    const queryConfig: QueryConfig = {
+      text: `UPDATE warehouses SET ${sets.join(
+        ", "
+      )} WHERE id = $${idx} RETURNING *;`,
+      values,
+    };
+    try {
+      await this.req.pg.query(queryConfig);
+    } catch (error: unknown) {
+      throw new CustomError({
+        message: `WarehouseRepo.update() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
+  async delete(id: string): Promise<Warehouse> {
+    const queryConfig: QueryConfig = {
+      text: `DELETE FROM warehouses WHERE id = $1 RETURNING *;`,
+      values: [id],
+    };
+    try {
+      const { rows }: QueryResult<Warehouse> =
+        await this.req.pg.query<Warehouse>(queryConfig);
+      return rows[0] ?? null;
+    } catch (error: unknown) {
+      throw new CustomError({
+        message: `WarehouseRepo.delete() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+}
