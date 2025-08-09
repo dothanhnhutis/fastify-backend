@@ -9,7 +9,7 @@ import {
   UpdateRoleByIdType,
 } from "@/modules/v1/role/role.schema";
 
-export class RoleRepo {
+export default class RoleRepo {
   constructor(private req: FastifyRequest) {}
 
   async query(query: QueryRoleType): Promise<{

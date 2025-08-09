@@ -1,12 +1,14 @@
 import fp from "fastify-plugin";
+import { StatusCodes } from "http-status-codes";
 import { Pool, PoolClient, PoolConfig } from "pg";
 import { FastifyInstance, FastifyPluginOptions } from "fastify";
 
 import config from "../config";
-import { UserRepo } from "@/db/repositories/user.repo";
-import { StatusCodes } from "http-status-codes";
 import { CustomError } from "../error-handler";
-import { RoleRepo } from "@/db/repositories/role.repo";
+import UserRepo from "@/db/repositories/user.repo";
+import RoleRepo from "@/db/repositories/role.repo";
+import WarehouseRepo from "@/db/repositories/warehouse.repo";
+import PackagingRepo from "@/db/repositories/packaging.repo";
 
 export interface PostgresDBOptions extends PoolConfig {}
 
@@ -30,6 +32,8 @@ async function postgresDB(
   fastify.decorate("pgPool", pool);
   fastify.decorateRequest("pg");
   fastify.decorateRequest("user");
+  fastify.decorateRequest("warehouse");
+  fastify.decorateRequest("packaging");
 
   // Handle pool errors
   pool.on("error", (err) => {
@@ -110,6 +114,10 @@ async function postgresDB(
       });
     try {
       req.pg = await pool.connect();
+      req.user = new UserRepo(req);
+      req.role = new RoleRepo(req);
+      req.warehouse = new WarehouseRepo(req);
+      req.packaging = new PackagingRepo(req);
     } catch (err) {
       fastify.logger.error(err, "PostgreSQL - onRequest error");
       isConnected = false;
@@ -119,8 +127,6 @@ async function postgresDB(
         reconnect();
       }
     } finally {
-      req.user = new UserRepo(req);
-      req.role = new RoleRepo(req);
     }
   });
 

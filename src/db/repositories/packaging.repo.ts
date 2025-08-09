@@ -4,7 +4,7 @@ import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "@/shared/error-handler";
 
-export class PackagingRepo {
+export default class PackagingRepo {
   constructor(private req: FastifyRequest) {}
 
   async findById(id: string): Promise<Packaging | null> {

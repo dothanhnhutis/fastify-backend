@@ -3,8 +3,12 @@ import { QueryConfig, QueryResult } from "pg";
 import { StatusCodes } from "http-status-codes";
 
 import { CustomError } from "@/shared/error-handler";
+import {
+  CreateWarehouseType,
+  UpdateWarehouseByIdType,
+} from "@/modules/v1/warehouse/warehouse.schema";
 
-export class WarehouseRepo {
+export default class WarehouseRepo {
   constructor(private req: FastifyRequest) {}
 
   async findById(id: string): Promise<Warehouse | null> {
@@ -25,7 +29,7 @@ export class WarehouseRepo {
     }
   }
 
-  async create(data: { name: string; address: string }): Promise<Warehouse> {
+  async create(data: CreateWarehouseType["body"]): Promise<Warehouse> {
     const queryConfig: QueryConfig = {
       text: `INSERT INTO warehouses (name, address) VALUES ($1::text, $2::text) RETURNING *;`,
       values: [data.name, data.address],
@@ -68,7 +72,7 @@ export class WarehouseRepo {
 
   async update(
     id: string,
-    data: Partial<{ name: string; address: string }>
+    data: UpdateWarehouseByIdType["body"]
   ): Promise<void> {
     const sets: string[] = [];
     const values: any[] = [];

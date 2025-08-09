@@ -8,7 +8,7 @@ import { CustomError } from "@/shared/error-handler";
 
 const SCAN_COUNT = 100;
 
-export class SessionRepo {
+export default class SessionRepo {
   constructor(private fastify: FastifyInstance) {}
 
   async create(

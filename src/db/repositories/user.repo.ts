@@ -1,7 +1,7 @@
 import { FastifyRequest } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
-export class UserRepo {
+export default class UserRepo {
   constructor(private req: FastifyRequest) {}
 
   async findByEmail(email: string): Promise<User | null> {
