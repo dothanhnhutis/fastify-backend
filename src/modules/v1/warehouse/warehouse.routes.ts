@@ -21,7 +21,7 @@ export default async function warehouseRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:warehouse:*"]),
+        // checkPermissionMiddleware(["read:warehouse:*"]),
         validateResource(getWarehouseByIdSchema),
       ],
     },
@@ -32,7 +32,7 @@ export default async function warehouseRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["read:warehouse"]),
+        // checkPermissionMiddleware(["read:warehouse"]),
         validateResource(createWarehouseSchema),
       ],
     },
@@ -43,7 +43,7 @@ export default async function warehouseRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["update:warehouse"]),
+        // checkPermissionMiddleware(["update:warehouse"]),
         validateResource(updateWarehouseByIdSchema),
       ],
     },
@@ -54,7 +54,7 @@ export default async function warehouseRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["delete:warehouse"]),
+        // checkPermissionMiddleware(["delete:warehouse"]),
         validateResource(deleteWarehouseByIdSchema),
       ],
     },

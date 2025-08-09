@@ -36,7 +36,7 @@ export default class PackagingRepo {
         await this.req.pg.query<Packaging>(queryConfig);
 
       const { rows: warehouses } = await this.req.pg.query<Warehouse>({
-        text: "SELECT id FROM warehouses",
+        text: "SELECT * FROM warehouses",
       });
 
       // Tạo packaging_stock_items
@@ -46,7 +46,7 @@ export default class PackagingRepo {
           .map((w, i) => {
             const baseIndex = i * 2;
             values.push(rows[0].id, w.id);
-            return `($${baseIndex + 1}, $${baseIndex + 2}`;
+            return `($${baseIndex + 1}, $${baseIndex + 2})`;
           })
           .join(", ");
         await this.req.pg.query({

@@ -694,7 +694,7 @@ import Redis, { RedisOptions as RedisOpts } from "ioredis";
 import { FastifyInstance, FastifyPluginOptions } from "fastify";
 
 import { CustomError } from "../error-handler";
-import { SessionRepo } from "@/db/repositories/session.repo";
+import SessionRepo from "@/db/repositories/session.repo";
 
 interface RedisOptions
   extends Omit<RedisOpts, "retryStrategy" | "lazyConnect"> {

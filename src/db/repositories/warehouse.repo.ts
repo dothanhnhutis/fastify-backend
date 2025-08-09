@@ -49,12 +49,13 @@ export default class WarehouseRepo {
           .map((p, i) => {
             const baseIndex = i * 2;
             values.push(rows[0].id, p.id);
-            return `($${baseIndex + 1}, $${baseIndex + 2}`;
+            return `($${baseIndex + 1}, $${baseIndex + 2})`;
           })
           .join(", ");
 
         await this.req.pg.query({
-          text: `INSET INTO packaging_stock_items (warehouse_id, packaging_id) VALUES ${placeholders}`,
+          text: `INSERT INTO packaging_stock_items (warehouse_id, packaging_id) VALUES ${placeholders}`,
+          values,
         });
       }
 

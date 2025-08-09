@@ -32,7 +32,6 @@ export const sortSchema = (keys: [string, ...string[]]) => {
   const buildSort = keys.flatMap((k) => [`${k}.asc`, `${k}.desc`]);
   return z.preprocess(
     (val: unknown) => {
-      console.log(buildSort);
       if (typeof val === "string" && buildSort.includes(val)) {
         const [field, direction] = val.split(".");
         return [{ field, direction }];

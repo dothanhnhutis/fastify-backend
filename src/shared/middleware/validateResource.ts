@@ -12,13 +12,11 @@ export default function validateResource(schema: ZodObject) {
       body: req.body,
       query: Object.assign({}, req.query),
     });
-    console.log("req.query1", Object.assign({}, req.query));
 
     if (success) {
       req.params = data.params;
       req.body = data.body;
       req.query = data.query;
-      console.log("data.query", data.query);
     } else {
       throw new BadRequestError(
         `validateResource middleware error: ${
