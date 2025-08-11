@@ -54,7 +54,7 @@ export default class WarehouseRepo {
           .join(", ");
 
         await this.req.pg.query({
-          text: `INSERT INTO packaging_stock_items (warehouse_id, packaging_id) VALUES ${placeholders}`,
+          text: `INSERT INTO packaging_stocks (warehouse_id, packaging_id) VALUES ${placeholders}`,
           values,
         });
       }

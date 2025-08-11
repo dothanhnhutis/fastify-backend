@@ -5,6 +5,8 @@ FROM 'user_data.csv' DELIMITER ',' CSV;
 --- cách 2: chèm có chọn field email, password_hash, username
 COPY users (email, password_hash, username)
 FROM '/data/user.csv' WITH (FORMAT csv, HEADER true, DELIMITER ',');
+-- Xoá bảng
+DROP TABLE IF EXISTS "PackagingTransaction";
 ---
 UPDATE users
 SET password_hash = '$argon2id$v=19$m=65536,t=3,p=4$oDdsbvL66JBFGcGtpM2bVQ$BSuYE86W6ALjeRJmC9I5sv/pr6xXJj3eFGvgS+aF7Io',
@@ -49,8 +51,7 @@ WHERE id = '50cffaeb-1b75-4834-a18c-189b85f9c276';
 ---
 DROP TABLE IF EXISTS packaging_transactions;
 ---
-DROP TYPE IF EXISTS transaction_type 
----
+DROP TYPE IF EXISTS transaction_type ---
 ALTER TABLE user_roles DROP CONSTRAINT IF EXISTS user_roles_role_id_fkey;
 ---
 DELETE FROM roles
@@ -61,9 +62,8 @@ WHERE id not IN (
 ---
 SELECT *
 FROM roles
-WHERE permissions = ALL('read:warehouse:*') 
--- WHERE name ILIKE '%Manager update%';
----
+WHERE permissions = ALL('read:warehouse:*') -- WHERE name ILIKE '%Manager update%';
+    ---
 SELECT *
 FROM roles
 ORDER BY permissions DESC,
@@ -76,3 +76,23 @@ WHERE permissions @> ARRAY ['read:warehouse:*', 'read:role:*'];
 ---
 SELECT *
 FROM roles
+INSERT INTO warehouses(name, address)
+VALUES('Nha Kho 2', '102 nguyen dinh chieu')
+RETURNING *;
+INSERT INTO packagings(name)
+VALUES('Hop giay B')
+RETURNING *;
+INSERT INTO packaging_stocks(warehouse_id, packaging_id)
+VALUES (
+        'a4c98956-c562-4345-82b9-5ce1371eeea7',
+        'b09a02ce-16a9-449a-b7e3-eb0e7c8f878d'
+    )
+RETURNING *;
+-- 4bdb6f0b-d5af-42c4-8d9a-f7b50bd7fbc1
+SET "audit.user" = "09095ad4-fb22-4e24-b209-0d8e6c47064f";
+INSERT INTO packaging_transactions (type, note)
+VALUES (
+        'IMPORT'::transaction_type,
+        'nhap kho san pham A'
+    )
+RETURNING *;

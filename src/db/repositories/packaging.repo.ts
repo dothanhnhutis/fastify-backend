@@ -39,7 +39,7 @@ export default class PackagingRepo {
         text: "SELECT * FROM warehouses",
       });
 
-      // Tạo packaging_stock_items
+      // Tạo packaging_stocks
       if (warehouses.length > 0) {
         const values: string[] = [];
         const placeholders = warehouses
@@ -50,7 +50,7 @@ export default class PackagingRepo {
           })
           .join(", ");
         await this.req.pg.query({
-          text: `INSERT INTO packaging_stock_items (packaging_id, warehouse_id) VALUES ${placeholders}`,
+          text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id) VALUES ${placeholders}`,
           values,
         });
       }

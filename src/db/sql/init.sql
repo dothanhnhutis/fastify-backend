@@ -1,11 +1,13 @@
 -- config database
-ALTER DATABASE pgdb;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+ALTER DATABASE pgdb
 SET datestyle = 'ISO, MDY';
--- DROP TABLE IF EXISTS "PackagingTransaction";
+--- tạo biến local cho connection hiện tại
+-- SET "audit.user" = 'Người_A';
+-- SELECT current_setting('audit.user', true);
 -- CreateTable
 CREATE TABLE IF NOT EXISTS users (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     username TEXT NOT NULL,
@@ -15,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 -- CreateTable
 CREATE TABLE IF NOT EXISTS roles (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
     permissions TEXT [],
     description TEXT DEFAULT (''),
@@ -25,8 +27,8 @@ CREATE TABLE IF NOT EXISTS roles (
 );
 -- CreateTable
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id UUID NOT NULL,
-    role_id UUID NOT NULL,
+    user_id TEXT NOT NULL,
+    role_id TEXT NOT NULL,
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT user_roles_pkey PRIMARY KEY (user_id, role_id)
 );
@@ -34,7 +36,7 @@ CREATE TABLE IF NOT EXISTS user_roles (
 CREATE TYPE transaction_type AS ENUM ('IMPORT', 'EXPORT', 'ADJUST');
 -- CreateTable
 CREATE TABLE IF NOT EXISTS warehouses (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
     address TEXT NOT NULL,
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
@@ -43,41 +45,57 @@ CREATE TABLE IF NOT EXISTS warehouses (
 );
 -- CreateTable
 CREATE TABLE IF NOT EXISTS packagings (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT packagings_pkey PRIMARY KEY (id)
 );
 -- CreateTable
-CREATE TABLE IF NOT EXISTS packaging_stock_items (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
-    warehouse_id UUID NOT NULL,
-    packaging_id UUID NOT NULL,
+CREATE TABLE IF NOT EXISTS packaging_stocks (
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+    warehouse_id TEXT NOT NULL,
+    packaging_id TEXT NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
-    CONSTRAINT packaging_stock_items_pkey PRIMARY KEY (id)
+    CONSTRAINT packaging_stocks_pkey PRIMARY KEY (id)
 );
--- CreateTable
+--- CreateTable
 CREATE TABLE IF NOT EXISTS packaging_transactions (
-    id UUID NOT NULL DEFAULT gen_random_uuid(),
-    stock_item_id UUID NOT NULL,
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     type transaction_type NOT NULL,
-    quantity INTEGER NOT NULL,
-    reason TEXT,
+    note TEXT,
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
 );
---- updated_at
-CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at := now();
-RETURN NEW;
-END;
-$$;
+--- CreateTable
+CREATE TABLE IF NOT EXISTS packaging_transaction_items (
+    packaging_stock_id TEXT,
+    packaging_transaction_id TEXT,
+    quantity INTEGER,
+    signedQuantity INTEGER,
+    createdAt TIMESTAMP(3) NOT NULL DEFAULT now(),
+    updatedAt TIMESTAMP(3) NOT NULL DEFAULT now(),
+    CONSTRAINT packaging_transaction_items_pkey PRIMARY KEY (packaging_stock_id, packaging_transaction_id)
+);
+-- CreateEnum
+CREATE TYPE action_type AS ENUM ('CREATE', 'UPDATE', 'DELETE');
+--- CreateTable
+CREATE TABLE IF NOT EXISTS packaging_transaction_audits (
+    id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
+    packaging_transaction_id TEXT,
+    actionType action_type,
+    changedData JSON,
+    performedBy TEXT,
+    performedAt TIMESTAMP(3) NOT NULL DEFAULT now(),
+    CONSTRAINT packaging_transaction_audits_pkey PRIMARY KEY (id)
+);
 -- CreateIndex
 CREATE UNIQUE INDEX users_email_key ON users(email);
 -- CreateIndex
-CREATE UNIQUE INDEX packaging_stock_items_warehouse_id_packaging_id_key ON packaging_stock_items(warehouse_id, packaging_id);
+CREATE UNIQUE INDEX packaging_stocks_warehouse_id_packaging_id_key ON packaging_stocks(warehouse_id, packaging_id);
 -- AddForeignKey
 ALTER TABLE user_roles
 ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -85,11 +103,78 @@ ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id
 ALTER TABLE user_roles
 ADD CONSTRAINT user_roles_role_id_fkey FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT ON UPDATE CASCADE;
 -- AddForeignKey
-ALTER TABLE packaging_stock_items
-ADD CONSTRAINT packaging_stock_items_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE packaging_stocks
+ADD CONSTRAINT packaging_stocks_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT ON UPDATE CASCADE;
 -- AddForeignKey
-ALTER TABLE packaging_stock_items
-ADD CONSTRAINT packaging_stock_items_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings(id) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE packaging_stocks
+ADD CONSTRAINT packaging_stocks_packaging_id_fkey FOREIGN KEY (packaging_id) REFERENCES packagings(id) ON DELETE RESTRICT ON UPDATE CASCADE;
 -- AddForeignKey
-ALTER TABLE packaging_transactions
-ADD CONSTRAINT packaging_transactions_stock_item_id_fkey FOREIGN KEY (stock_item_id) REFERENCES packaging_stock_items(id) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE packaging_transaction_items
+ADD CONSTRAINT packaging_transaction_items_packaging_stock_id_fkey FOREIGN KEY (packaging_stock_id) REFERENCES packaging_stocks(id) ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey
+ALTER TABLE packaging_transaction_items
+ADD CONSTRAINT packaging_transaction_items_packaging_transaction_id_fkey FOREIGN KEY (packaging_transaction_id) REFERENCES packaging_transactions(id) ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey
+ALTER TABLE packaging_transaction_audits
+ADD CONSTRAINT packaging_transaction_audits_packaging_transaction_id_fkey FOREIGN KEY (packaging_transaction_id) REFERENCES packaging_transactions(id) ON DELETE CASCADE ON UPDATE CASCADE;
+-- Create function auto update updated_at field
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at := now();
+RETURN NEW;
+END;
+$$;
+-- create function
+CREATE OR REPLACE FUNCTION log_packaging_transaction_audit() RETURNS TRIGGER AS $$
+DECLARE action TEXT;
+changed_data JSONB;
+performed_by TEXT;
+BEGIN -- Lấy user từ session (nếu chưa set sẽ là NULL)
+performed_by := current_setting('app.user', true);
+-- Xác định loại hành động
+IF TG_OP = 'INSERT' THEN action := 'CREATE'::action_type;
+changed_data := to_jsonb(NEW);
+ELSIF TG_OP = 'UPDATE' THEN action := 'UPDATE'::action_type;
+changed_data := jsonb_build_object(
+    'old',
+    to_jsonb(OLD),
+    'new',
+    to_jsonb(NEW)
+);
+ELSIF TG_OP = 'DELETE' THEN action := 'DELETE'::action_type;
+changed_data := to_jsonb(OLD);
+END IF;
+-- Ghi log
+INSERT INTO packaging_transaction_audits (
+        packaging_transaction_id,
+        actionType,
+        changedData,
+        performedBy
+    )
+VALUES (
+        COALESCE(NEW.id, OLD.id),
+        action,
+        changed_data,
+        COALESCE(performed_by, 'unknown')
+    );
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER trg_packaging_transaction_audit ON packaging_transactions;
+-- create Trigger
+CREATE TRIGGER trg_packaging_transaction_audit
+AFTER
+INSERT
+    OR
+UPDATE
+    OR DELETE ON packaging_transactions FOR EACH ROW EXECUTE FUNCTION log_packaging_transaction_audit();
+--- reset DB bằng shell
+-- Đóng tất cả kết nối (nếu database đang dùng)
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'pgdb'
+    AND pid <> pg_backend_pid();
+-- Xoá và tạo lại database
+DROP DATABASE pgdb;
+CREATE DATABASE pgdb;
+---  reset DB bằng SQL
+DROP SCHEMA public CASCADE;
+CREATE SCHEMA public;
