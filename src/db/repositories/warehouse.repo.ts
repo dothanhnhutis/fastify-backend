@@ -11,6 +11,23 @@ import {
 export default class WarehouseRepo {
   constructor(private req: FastifyRequest) {}
 
+  async findAll(): Promise<Warehouse[]> {
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM warehouses;`,
+    };
+    try {
+      const { rows }: QueryResult<Warehouse> =
+        await this.req.pg.query<Warehouse>(queryConfig);
+      return rows;
+    } catch (error: any) {
+      throw new CustomError({
+        message: `WarehouseRepo.findAll() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
   async findById(id: string): Promise<Warehouse | null> {
     const queryConfig: QueryConfig = {
       text: `SELECT * FROM warehouses WHERE id = $1 LIMIT 1`,

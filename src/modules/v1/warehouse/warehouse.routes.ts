@@ -3,6 +3,7 @@ import {
   createWarehouseController,
   deleteWarehouseByIdController,
   getWarehouseByIdController,
+  queryWarehouseController,
   updateWarehouseByIdController,
 } from "./warehouse.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
@@ -16,6 +17,17 @@ import {
 } from "./warehouse.schema";
 
 export default async function warehouseRoutes(fastify: FastifyInstance) {
+  fastify.get(
+    "/",
+    {
+      preHandler: [
+        requiredAuthMiddleware,
+        // checkPermissionMiddleware(["read:warehouse:*"]),
+        // validateResource(getWarehouseByIdSchema),
+      ],
+    },
+    queryWarehouseController
+  );
   fastify.get(
     "/:id",
     {

@@ -9,6 +9,21 @@ import {
   UpdateWarehouseByIdType,
 } from "./warehouse.schema";
 
+export async function queryWarehouseController(
+  req: FastifyRequest<{ Params: GetWarehouseByIdType["params"] }>,
+  reply: FastifyReply
+) {
+  const warehouse = await req.warehouse.findAll();
+  if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      warehouse,
+    },
+  });
+}
+
 export async function getWarehouseByIdController(
   req: FastifyRequest<{ Params: GetWarehouseByIdType["params"] }>,
   reply: FastifyReply

@@ -8,6 +8,20 @@ import {
 } from "./packaging.schema";
 import { BadRequestError } from "@/shared/error-handler";
 
+export async function queryPackagingController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {
+  const packagings = await req.packaging.findAll();
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      packagings,
+    },
+  });
+}
+
 export async function getPackagingByIdController(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply

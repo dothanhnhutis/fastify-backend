@@ -55,6 +55,24 @@ type Packaging = {
   updated_at: Date;
 };
 
+type TransactionItem = {
+  packaging_stock_id: string;
+  packaging_transaction_id: string;
+  quatity: number;
+  signed_quantity: number;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type Transaction = {
+  id: string;
+  type: string;
+  note: string;
+  items: TransactionItem[];
+  created_at: Date;
+  updated_at: Date;
+};
+
 type ReqInfo = {
   userId: string;
   ip: string;

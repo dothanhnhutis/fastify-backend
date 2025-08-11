@@ -75,17 +75,19 @@ FROM roles
 WHERE permissions @> ARRAY ['read:warehouse:*', 'read:role:*'];
 ---
 SELECT *
-FROM roles
+FROM roles ---
 INSERT INTO warehouses(name, address)
-VALUES('Nha Kho 2', '102 nguyen dinh chieu')
+VALUES('Nha Kho', '159 nguyen dinh chieu')
 RETURNING *;
+---
 INSERT INTO packagings(name)
 VALUES('Hop giay B')
 RETURNING *;
+---
 INSERT INTO packaging_stocks(warehouse_id, packaging_id)
 VALUES (
-        'a4c98956-c562-4345-82b9-5ce1371eeea7',
-        'b09a02ce-16a9-449a-b7e3-eb0e7c8f878d'
+        '32a56069-c637-4084-b053-ebee4c6ea42c',
+        'a4bb912b-9e69-4477-86aa-c1600058fc78'
     )
 RETURNING *;
 -- 4bdb6f0b-d5af-42c4-8d9a-f7b50bd7fbc1
@@ -96,3 +98,27 @@ VALUES (
         'nhap kho san pham A'
     )
 RETURNING *;
+----
+---
+INSERT INTO packaging_transaction_items (
+        packaging_stock_id,
+        packaging_transaction_id,
+        quantity,
+        signed_quantity
+    )
+VALUES (
+        '70c26509-ab56-4c47-bcce-154a692b2d83',
+        '49c083c5-b280-4803-829c-e3e500fcf4db',
+        50,
+        50
+    )
+RETURNING *;
+---
+INSERT INTO packaging_transaction_audits (
+        packaging_transaction_id,
+        action_type,
+        new_data,
+        performed_at,
+        performed_by
+    )
+VALUES('49c083c5-b280-4803-829c-e3e500fcf4db', "CREATE",);

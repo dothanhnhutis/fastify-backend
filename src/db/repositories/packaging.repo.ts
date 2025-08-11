@@ -7,6 +7,23 @@ import { CustomError } from "@/shared/error-handler";
 export default class PackagingRepo {
   constructor(private req: FastifyRequest) {}
 
+  async findAll(): Promise<Packaging[]> {
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM packagings;`,
+    };
+    try {
+      const { rows }: QueryResult<Packaging> =
+        await this.req.pg.query<Packaging>(queryConfig);
+      return rows;
+    } catch (error: any) {
+      throw new CustomError({
+        message: `PackagingRepo.findAll() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
   async findById(id: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
       text: `SELECT * FROM packagings WHERE id = $1 LIMIT 1`,

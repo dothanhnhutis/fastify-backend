@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS roles (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     name TEXT NOT NULL,
-    permissions TEXT [],
-    description TEXT DEFAULT (''),
+    permissions TEXT [] NOT NULL DEFAULT ARRAY []::text [],
+    description TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT roles_pkey PRIMARY KEY (id)
@@ -65,19 +65,19 @@ CREATE TABLE IF NOT EXISTS packaging_stocks (
 CREATE TABLE IF NOT EXISTS packaging_transactions (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     type transaction_type NOT NULL,
-    note TEXT,
+    note TEXT NOT NULL,
     created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transactions_pkey PRIMARY KEY (id)
 );
 --- CreateTable
 CREATE TABLE IF NOT EXISTS packaging_transaction_items (
-    packaging_stock_id TEXT,
-    packaging_transaction_id TEXT,
-    quantity INTEGER,
-    signedQuantity INTEGER,
-    createdAt TIMESTAMP(3) NOT NULL DEFAULT now(),
-    updatedAt TIMESTAMP(3) NOT NULL DEFAULT now(),
+    packaging_stock_id TEXT NOT NULL,
+    packaging_transaction_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    signed_quantity INTEGER NOT NULL,
+    created_at TIMESTAMP(3) NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transaction_items_pkey PRIMARY KEY (packaging_stock_id, packaging_transaction_id)
 );
 -- CreateEnum
@@ -85,11 +85,12 @@ CREATE TYPE action_type AS ENUM ('CREATE', 'UPDATE', 'DELETE');
 --- CreateTable
 CREATE TABLE IF NOT EXISTS packaging_transaction_audits (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
-    packaging_transaction_id TEXT,
-    actionType action_type,
-    changedData JSON,
-    performedBy TEXT,
-    performedAt TIMESTAMP(3) NOT NULL DEFAULT now(),
+    packaging_transaction_id TEXT NOT NULL,
+    action_type action_type NOT NULL,
+    old_data JSON,
+    new_data JSON,
+    performed_by TEXT NOT NULL,
+    performed_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transaction_audits_pkey PRIMARY KEY (id)
 );
 -- CreateIndex
@@ -123,49 +124,51 @@ RETURN NEW;
 END;
 $$;
 -- create function
-CREATE OR REPLACE FUNCTION log_packaging_transaction_audit() RETURNS TRIGGER AS $$
-DECLARE action TEXT;
-changed_data JSONB;
-performed_by TEXT;
-BEGIN -- Lấy user từ session (nếu chưa set sẽ là NULL)
-performed_by := current_setting('app.user', true);
--- Xác định loại hành động
-IF TG_OP = 'INSERT' THEN action := 'CREATE'::action_type;
-changed_data := to_jsonb(NEW);
-ELSIF TG_OP = 'UPDATE' THEN action := 'UPDATE'::action_type;
-changed_data := jsonb_build_object(
-    'old',
-    to_jsonb(OLD),
-    'new',
-    to_jsonb(NEW)
-);
-ELSIF TG_OP = 'DELETE' THEN action := 'DELETE'::action_type;
-changed_data := to_jsonb(OLD);
-END IF;
--- Ghi log
-INSERT INTO packaging_transaction_audits (
-        packaging_transaction_id,
-        actionType,
-        changedData,
-        performedBy
-    )
-VALUES (
-        COALESCE(NEW.id, OLD.id),
-        action,
-        changed_data,
-        COALESCE(performed_by, 'unknown')
-    );
-RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-DROP TRIGGER trg_packaging_transaction_audit ON packaging_transactions;
--- create Trigger
-CREATE TRIGGER trg_packaging_transaction_audit
-AFTER
-INSERT
-    OR
-UPDATE
-    OR DELETE ON packaging_transactions FOR EACH ROW EXECUTE FUNCTION log_packaging_transaction_audit();
+-- CREATE OR REPLACE FUNCTION log_packaging_transaction_audit() RETURNS TRIGGER AS $$
+-- DECLARE action TEXT;
+-- changed_data JSONB;
+-- performed_by TEXT;
+-- BEGIN -- Lấy user từ session (nếu chưa set sẽ là NULL)
+-- performed_by := current_setting('app.user', true);
+-- -- Xác định loại hành động
+-- IF TG_OP = 'INSERT' THEN action := 'CREATE'::action_type;
+-- changed_data := to_jsonb(NEW);
+-- ELSIF TG_OP = 'UPDATE' THEN action := 'UPDATE'::action_type;
+-- changed_data := jsonb_build_object(
+--     'old',
+--     to_jsonb(OLD),
+--     'new',
+--     to_jsonb(NEW)
+-- );
+-- ELSIF TG_OP = 'DELETE' THEN action := 'DELETE'::action_type;
+-- changed_data := to_jsonb(OLD);
+-- END IF;
+-- -- Ghi log
+-- INSERT INTO packaging_transaction_audits (
+--         packaging_transaction_id,
+--         actionType,
+--         changedData,
+--         performedBy
+--     )
+-- VALUES (
+--         COALESCE(NEW.id, OLD.id),
+--         action,
+--         changed_data,
+--         COALESCE(performed_by, 'unknown')
+--     );
+-- RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql;
+---
+-- DROP FUNCTION if EXISTS log_packaging_transaction_audit();
+-- DROP TRIGGER trg_packaging_transaction_audit ON packaging_transactions;
+-- create Trigger 
+-- CREATE TRIGGER trg_packaging_transaction_audit
+-- AFTER
+-- INSERT
+--     OR
+-- UPDATE
+--     OR DELETE ON packaging_transactions FOR EACH ROW EXECUTE FUNCTION log_packaging_transaction_audit();
 --- reset DB bằng shell
 -- Đóng tất cả kết nối (nếu database đang dùng)
 SELECT pg_terminate_backend(pid)

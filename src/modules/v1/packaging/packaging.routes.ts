@@ -7,6 +7,7 @@ import {
   createPackagingController,
   deletePackagingByIdController,
   getPackagingByIdController,
+  queryPackagingController,
   updatePackagingByIdController,
 } from "./packaging.controller";
 import {
@@ -17,6 +18,18 @@ import {
 } from "./packaging.schema";
 
 export default async function packagingRoutes(fastify: FastifyInstance) {
+  fastify.get(
+    "/",
+    {
+      preHandler: [
+        requiredAuthMiddleware,
+        // checkPermissionMiddleware(["read:packaging:id"]),
+        // validateResource(getPackagingByIdSchema),
+      ],
+    },
+    queryPackagingController
+  );
+
   fastify.get(
     "/:id",
     {
