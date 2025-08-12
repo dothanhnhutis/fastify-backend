@@ -9,7 +9,37 @@ export default class PackagingRepo {
 
   async findAll(): Promise<Packaging[]> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM packagings;`,
+      text: `
+      SELECT p.*,
+            sum(ps.quantity)::int,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id',
+                        ps.id,
+                        'warehouse_id',
+                        ps.warehouse_id,
+                        'packaging_id',
+                        ps.packaging_id,
+                        'quantity',
+                        ps.quantity,
+                        'warehouse',
+                        row_to_json(w),
+                        'created_at',
+                        ps.created_at,
+                        'updated_at',
+                        ps.updated_at
+                    )
+                ) FILTER (
+                    WHERE ps.warehouse_id IS NOT NULL
+                ),
+                '[]'
+            ) AS items
+      FROM packagings p
+          LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
+          LEFT JOIN warehouses w ON ps.warehouse_id = w.id
+      GROUP BY p.id;
+      `,
     };
     try {
       const { rows }: QueryResult<Packaging> =
@@ -26,7 +56,39 @@ export default class PackagingRepo {
 
   async findById(id: string): Promise<Packaging | null> {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM packagings WHERE id = $1 LIMIT 1`,
+      text: `
+      SELECT p.*,
+            sum(ps.quantity)::int,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id',
+                        ps.id,
+                        'warehouse_id',
+                        ps.warehouse_id,
+                        'packaging_id',
+                        ps.packaging_id,
+                        'quantity',
+                        ps.quantity,
+                        'warehouse',
+                        row_to_json(w),
+                        'created_at',
+                        ps.created_at,
+                        'updated_at',
+                        ps.updated_at
+                    )
+                ) FILTER (
+                    WHERE ps.warehouse_id IS NOT NULL
+                ),
+                '[]'
+            ) AS items
+      FROM packagings p
+          LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
+          LEFT JOIN warehouses w ON ps.warehouse_id = w.id
+      WHERE p.id = $1
+      GROUP BY p.id
+      LIMIT 1;
+      `,
       values: [id],
     };
     try {
@@ -51,26 +113,6 @@ export default class PackagingRepo {
       await this.req.pg.query("BEGIN");
       const { rows }: QueryResult<Packaging> =
         await this.req.pg.query<Packaging>(queryConfig);
-
-      const { rows: warehouses } = await this.req.pg.query<Warehouse>({
-        text: "SELECT * FROM warehouses",
-      });
-
-      // Tạo packaging_stocks
-      if (warehouses.length > 0) {
-        const values: string[] = [];
-        const placeholders = warehouses
-          .map((w, i) => {
-            const baseIndex = i * 2;
-            values.push(rows[0].id, w.id);
-            return `($${baseIndex + 1}, $${baseIndex + 2})`;
-          })
-          .join(", ");
-        await this.req.pg.query({
-          text: `INSERT INTO packaging_stocks (packaging_id, warehouse_id) VALUES ${placeholders}`,
-          values,
-        });
-      }
 
       await this.req.pg.query("COMMIT");
       return rows[0] ?? null;

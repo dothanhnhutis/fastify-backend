@@ -56,25 +56,25 @@ export default class WarehouseRepo {
       const { rows }: QueryResult<Warehouse> =
         await this.req.pg.query<Warehouse>(queryConfig);
 
-      const { rows: packagings } = await this.req.pg.query({
-        text: `SELECT * FROM packagings`,
-      });
+      // const { rows: packagings } = await this.req.pg.query({
+      //   text: `SELECT * FROM packagings`,
+      // });
 
-      if (packagings.length > 0) {
-        const values: string[] = [];
-        const placeholders = packagings
-          .map((p, i) => {
-            const baseIndex = i * 2;
-            values.push(rows[0].id, p.id);
-            return `($${baseIndex + 1}, $${baseIndex + 2})`;
-          })
-          .join(", ");
+      // if (packagings.length > 0) {
+      //   const values: string[] = [];
+      //   const placeholders = packagings
+      //     .map((p, i) => {
+      //       const baseIndex = i * 2;
+      //       values.push(rows[0].id, p.id);
+      //       return `($${baseIndex + 1}, $${baseIndex + 2})`;
+      //     })
+      //     .join(", ");
 
-        await this.req.pg.query({
-          text: `INSERT INTO packaging_stocks (warehouse_id, packaging_id) VALUES ${placeholders}`,
-          values,
-        });
-      }
+      //   await this.req.pg.query({
+      //     text: `INSERT INTO packaging_stocks (warehouse_id, packaging_id) VALUES ${placeholders}`,
+      //     values,
+      //   });
+      // }
 
       await this.req.pg.query("COMMIT");
       return rows[0] ?? null;

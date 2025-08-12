@@ -121,4 +121,68 @@ INSERT INTO packaging_transaction_audits (
         performed_at,
         performed_by
     )
-VALUES('49c083c5-b280-4803-829c-e3e500fcf4db', "CREATE",);
+VALUES(
+        '49c083c5-b280-4803-829c-e3e500fcf4db',
+        "CREATE",
+    );
+---
+SELECT *
+FROM packagings;
+---
+SELECT packaging_id,
+    sum(quantity)
+FROM packaging_stocks
+GROUP BY packaging_id;
+---
+SELECT p.*,
+    sum(ps.quantity),
+    COALESCE(
+        json_agg(ps) FILTER (
+            WHERE ps.warehouse_id IS NOT NULL
+        ),
+        '[]'
+    ) AS items
+FROM packagings p
+    LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id -- WHERE p.id = 'a4bb912b-9e69-4477-86aa-c1600058fc78'
+GROUP BY p.id
+LIMIT 1;
+---
+SELECT p.*,
+    sum(ps.quantity),
+    COALESCE(
+        json_agg(
+            json_build_object(
+                'id',
+                ps.id,
+                'warehouse_id',
+                ps.warehouse_id,
+                'packaging_id',
+                ps.packaging_id,
+                'quantity',
+                ps.quantity,
+                'warehouse',
+                row_to_json(w),
+                'created_at',
+                ps.created_at,
+                'updated_at',
+                ps.updated_at
+            )
+        ) FILTER (
+            WHERE ps.warehouse_id IS NOT NULL
+        ),
+        '[]'
+    ) AS items
+FROM packagings p
+    LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
+    LEFT JOIN warehouses w ON ps.warehouse_id = w.id
+WHERE p.id = 'a4bb912b-9e69-4477-86aa-c1600058fc78'
+GROUP BY p.id;
+---
+UPDATE packaging_stocks
+SET quantity = (
+        SELECT sum(signed_quantity)
+        FROM packaging_transaction_items
+        WHERE packaging_stock_id = '70c26509-ab56-4c47-bcce-154a692b2d83'
+    )
+WHERE id = '70c26509-ab56-4c47-bcce-154a692b2d83'
+RETURNING *;

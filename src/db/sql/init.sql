@@ -119,10 +119,71 @@ ADD CONSTRAINT packaging_transaction_items_packaging_transaction_id_fkey FOREIGN
 ALTER TABLE packaging_transaction_audits
 ADD CONSTRAINT packaging_transaction_audits_packaging_transaction_id_fkey FOREIGN KEY (packaging_transaction_id) REFERENCES packaging_transactions(id) ON DELETE CASCADE ON UPDATE CASCADE;
 -- Create function auto update updated_at field
-CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at := now();
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at := now();
 RETURN NEW;
 END;
-$$;
+$$ LANGUAGE plpgsql;
+-- Create function
+CREATE OR REPLACE FUNCTION create_packaging_stocks_for_new_warehouse() RETURNS TRIGGER AS $$ BEGIN
+INSERT INTO packaging_stocks (warehouse_id, packaging_id, quantity)
+SELECT NEW.id,
+    p.id,
+    0
+FROM packagings p;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- Create trigger
+CREATE TRIGGER trg_create_packaging_stocks_for_warehouse
+AFTER
+INSERT ON warehouses FOR EACH ROW EXECUTE FUNCTION create_packaging_stocks_for_new_warehouse();
+-- Create function
+CREATE OR REPLACE FUNCTION create_packaging_stocks_for_new_packaging() RETURNS TRIGGER AS $$ BEGIN
+INSERT INTO packaging_stocks (warehouse_id, packaging_id, quantity)
+SELECT w.id,
+    NEW.id,
+    0
+FROM warehouses w;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- Create trigger
+CREATE TRIGGER trg_create_packaging_stocks_for_packaging
+AFTER
+INSERT ON packagings FOR EACH ROW EXECUTE FUNCTION create_packaging_stocks_for_new_packaging();
+--- test
+-- CREATE OR REPLACE FUNCTION update_packaging_stock() RETURNS TRIGGER AS $$ BEGIN
+-- UPDATE packaging_stocks
+-- SET quantity = (
+--         SELECT sum(signed_quantity)
+--         FROM packaging_transaction_items
+--         WHERE packaging_stock_id = OLD.packaging_stock_id;
+--     )
+-- WHERE id = OLD.packaging_stock_id
+-- END;
+-- $$ LANGUAGE plpgsql;
+-- ---
+-- CREATE TRIGGER trg_update_packaging_stocks_quantity
+-- AFTER
+-- INSERT OR UPDATE OR DELETE ON packaging_transactions FOR EACH ROW EXECUTE FUNCTION update_packaging_stock();
+CREATE OR REPLACE FUNCTION update_packaging_stock() RETURNS TRIGGER AS $$ BEGIN
+UPDATE packaging_stocks
+SET quantity = (
+        SELECT COALESCE(SUM(signed_quantity), 0)
+        FROM packaging_transaction_items
+        WHERE packaging_stock_id = OLD.packaging_stock_id
+    )
+WHERE id = OLD.packaging_stock_id;
+RETURN NULL;
+-- hoặc RETURN OLD nếu cần
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_update_packaging_stocks_quantity
+AFTER
+INSERT
+    OR
+UPDATE
+    OR DELETE ON packaging_transaction_items FOR EACH ROW EXECUTE FUNCTION update_packaging_stock();
 -- create function
 -- CREATE OR REPLACE FUNCTION log_packaging_transaction_audit() RETURNS TRIGGER AS $$
 -- DECLARE action TEXT;
