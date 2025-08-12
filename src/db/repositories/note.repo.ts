@@ -13,9 +13,10 @@ type CreateNoteRepoType = {
     quantity: number;
     signed_quantity: number;
   }[];
+  performed_by: string;
 };
 
-export default class NoteRepo {
+export default class TranasctionRepo {
   constructor(private req: FastifyRequest) {}
 
   async create(data: CreateNoteRepoType) {
@@ -25,7 +26,7 @@ export default class NoteRepo {
     };
     try {
       await this.req.pg.query("BEGIN");
-      const { rows: transaction }: QueryResult<Omit<Transaction, "items">> =
+      const { rows: transactionRow }: QueryResult<Omit<Transaction, "items">> =
         await this.req.pg.query<Omit<Transaction, "items">>(queryConfig);
 
       const values: any[] = [];
@@ -35,7 +36,7 @@ export default class NoteRepo {
 
           values.push(
             item.packaging_stock_id,
-            transaction[0].id,
+            transactionRow[0].id,
             item.quantity,
             item.signed_quantity
           );
@@ -45,16 +46,21 @@ export default class NoteRepo {
         })
         .join(", ");
 
-      const { rows } = await this.req.pg.query<TransactionItem>(
-        `INSERT INTO packaging_transaction_items (packing_stock_id, packaging_transaction_id, quantity, signed_quantity) VALUES ${placeholders} RETURNING *`
-      );
+      const { rows: transactionItemRows } =
+        await this.req.pg.query<TransactionItem>(
+          `INSERT INTO packaging_transaction_items (packing_stock_id, packaging_transaction_id, quantity, signed_quantity) VALUES ${placeholders} RETURNING *`
+        );
+
+      const result = { ...transactionRow[0], items: transactionItemRows };
+
+      await this.req.pg.query({
+        text: "INSERT INTO packaging_transaction_audits (action_type,new_data) VALUES ($1::action_type,$2::json)",
+        values: ["CREATE", result],
+      });
 
       await this.req.pg.query("COMMIT");
 
-      return {
-        ...transaction,
-        items: rows,
-      };
+      return result;
     } catch (error: unknown) {
       await this.req.pg.query("ROLLBACK");
       throw new CustomError({
