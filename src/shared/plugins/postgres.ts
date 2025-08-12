@@ -9,6 +9,8 @@ import UserRepo from "@/db/repositories/user.repo";
 import RoleRepo from "@/db/repositories/role.repo";
 import WarehouseRepo from "@/db/repositories/warehouse.repo";
 import PackagingRepo from "@/db/repositories/packaging.repo";
+import PackagingStockRepo from "@/db/repositories/packaging_stock.repo";
+import TransactionRepo from "@/db/repositories/transaction.repo";
 
 export interface PostgresDBOptions extends PoolConfig {}
 
@@ -31,9 +33,12 @@ async function postgresDB(
 
   fastify.decorate("pgPool", pool);
   fastify.decorateRequest("pg");
-  fastify.decorateRequest("user");
-  fastify.decorateRequest("warehouse");
-  fastify.decorateRequest("packaging");
+  fastify.decorateRequest("users");
+  fastify.decorateRequest("roles");
+  fastify.decorateRequest("warehouses");
+  fastify.decorateRequest("packagings");
+  fastify.decorateRequest("packaging_stocks");
+  fastify.decorateRequest("transactions");
 
   // Handle pool errors
   pool.on("error", (err) => {
@@ -114,10 +119,12 @@ async function postgresDB(
       });
     try {
       req.pg = await pool.connect();
-      req.user = new UserRepo(req);
-      req.role = new RoleRepo(req);
-      req.warehouse = new WarehouseRepo(req);
-      req.packaging = new PackagingRepo(req);
+      req.users = new UserRepo(req);
+      req.roles = new RoleRepo(req);
+      req.warehouses = new WarehouseRepo(req);
+      req.packagings = new PackagingRepo(req);
+      req.packaging_stocks = new PackagingStockRepo(req);
+      req.transactions = new TransactionRepo(req);
     } catch (err) {
       fastify.logger.error(err, "PostgreSQL - onRequest error");
       isConnected = false;

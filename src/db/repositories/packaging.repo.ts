@@ -7,6 +7,116 @@ import { CustomError } from "@/shared/error-handler";
 export default class PackagingRepo {
   constructor(private req: FastifyRequest) {}
 
+  async query(data: {
+    name?: string;
+    sorts?: {
+      field: string;
+      direction: "asc" | "desc";
+    }[];
+    limit?: number;
+    page?: number;
+  }) {
+    let queryString = [
+      `
+      SELECT p.*,
+            sum(ps.quantity)::int,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id',
+                        ps.id,
+                        'warehouse_id',
+                        ps.warehouse_id,
+                        'packaging_id',
+                        ps.packaging_id,
+                        'quantity',
+                        ps.quantity,
+                        'warehouse',
+                        row_to_json(w),
+                        'created_at',
+                        ps.created_at,
+                        'updated_at',
+                        ps.updated_at
+                    )
+                ) FILTER (
+                    WHERE ps.warehouse_id IS NOT NULL
+                ),
+                '[]'
+            ) AS items
+      FROM packagings p
+          LEFT JOIN packaging_stocks ps ON p.id = ps.packaging_id
+          LEFT JOIN warehouses w ON ps.warehouse_id = w.id
+      GROUP BY p.id;
+      `,
+    ];
+    const values: any[] = [];
+
+    let where: string[] = [];
+    let idx = 1;
+
+    if (data.name != undefined) {
+      where.push(`WHERE name ILIKE $${idx++}::text`);
+      values.push(`%${data.name.trim()}%`);
+    }
+
+    try {
+      const { rows } = await this.req.pg.query<{ count: string }>({
+        text: queryString.join(" ").replace("*", "count(*)"),
+        values,
+      });
+
+      const totalItem = parseInt(rows[0].count);
+
+      const fieldAllow = ["name"];
+      if (data.sorts != undefined) {
+        queryString.push(
+          `ORDER BY ${data.sorts
+            .filter((sort) => fieldAllow.includes(sort.field))
+            .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+            .join(", ")}`
+        );
+      }
+
+      if (data.page != undefined) {
+        const limit = data.limit ?? totalItem;
+        const offset = (data.page - 1) * limit;
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+      }
+
+      const queryConfig: QueryConfig = {
+        text: queryString.join(" "),
+        values,
+      };
+
+      const { rows: packagings } = await this.req.pg.query<Warehouse>(
+        queryConfig
+      );
+
+      const limit = data.limit ?? totalItem;
+      const totalPage = Math.ceil(totalItem / limit);
+      const page = data.page ?? 1;
+
+      return {
+        packagings,
+        metadata: {
+          totalItem,
+          totalPage,
+          hasNextPage: page < totalPage,
+          limit,
+          itemStart: (page - 1) * limit + 1,
+          itemEnd: Math.min(page * limit, totalItem),
+        },
+      };
+    } catch (error: any) {
+      throw new CustomError({
+        message: `PackagingRepo.query() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
   async findAll(): Promise<Packaging[]> {
     const queryConfig: QueryConfig = {
       text: `

@@ -11,6 +11,97 @@ import {
 export default class WarehouseRepo {
   constructor(private req: FastifyRequest) {}
 
+  async query(data: {
+    name?: string;
+    address?: string;
+    sorts?: {
+      field: string;
+      direction: "asc" | "desc";
+    }[];
+    limit?: number;
+    page?: number;
+  }): Promise<{
+    warehouses: Warehouse[];
+    metadata: Metadata;
+  }> {
+    let queryString = ["SELECT * FROM warehouse"];
+    const values: any[] = [];
+
+    let where: string[] = [];
+    let idx = 1;
+
+    if (data.name != undefined) {
+      where.push(`name ILIKE $${idx++}::text`);
+      values.push(`%${data.name.trim()}%`);
+    }
+
+    if (data.address != undefined) {
+      where.push(`address ILIKE $${idx++}::text`);
+      values.push(`%${data.address.trim()}%`);
+    }
+
+    if (where.length > 0) {
+      queryString.push(`WHERE ${where.join(" AND ")}`);
+    }
+
+    try {
+      const { rows } = await this.req.pg.query<{ count: string }>({
+        text: queryString.join(" ").replace("*", "count(*)"),
+        values,
+      });
+
+      const totalItem = parseInt(rows[0].count);
+
+      const fieldAllow = ["name", "address"];
+      if (data.sorts != undefined) {
+        queryString.push(
+          `ORDER BY ${data.sorts
+            .filter((sort) => fieldAllow.includes(sort.field))
+            .map((sort) => `${sort.field} ${sort.direction.toUpperCase()}`)
+            .join(", ")}`
+        );
+      }
+
+      if (data.page != undefined) {
+        const limit = data.limit ?? totalItem;
+        const offset = (data.page - 1) * limit;
+        queryString.push(`LIMIT $${idx++}::int OFFSET $${idx}::int`);
+        values.push(limit, offset);
+      }
+
+      const queryConfig: QueryConfig = {
+        text: queryString.join(" "),
+        values,
+      };
+
+      const { rows: warehouses } = await this.req.pg.query<Warehouse>(
+        queryConfig
+      );
+
+      const limit = data.limit ?? totalItem;
+      const totalPage = Math.ceil(totalItem / limit);
+      const page = data.page ?? 1;
+
+      return {
+        warehouses,
+        metadata: {
+          totalItem,
+          totalPage,
+          hasNextPage: page < totalPage,
+          limit,
+          itemStart: (page - 1) * limit + 1,
+          itemEnd: Math.min(page * limit, totalItem),
+        },
+      };
+    } catch (error: any) {
+      throw new CustomError({
+        message: `WarehouseRepo.query() method error: ${error}`,
+        statusCode: StatusCodes.BAD_REQUEST,
+        statusText: "BAD_REQUEST",
+      });
+    }
+  }
+
   async findAll(): Promise<Warehouse[]> {
     const queryConfig: QueryConfig = {
       text: `SELECT * FROM warehouses;`,

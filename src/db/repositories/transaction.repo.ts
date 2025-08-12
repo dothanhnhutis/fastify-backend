@@ -16,12 +16,12 @@ type CreateNoteRepoType = {
   performed_by: string;
 };
 
-export default class TranasctionRepo {
+export default class TransactionRepo {
   constructor(private req: FastifyRequest) {}
 
   async create(data: CreateNoteRepoType) {
     const queryConfig: QueryConfig = {
-      text: `INSERT INTO packaging_transactions (type,note) VALUES ($1::transaction_type, $2::text) RETURNING *;`,
+      text: `INSERT INTO packaging_transactions (type, note) VALUES ($1::transaction_type, $2::text) RETURNING *;`,
       values: [data.type, data.note],
     };
     try {
@@ -29,9 +29,10 @@ export default class TranasctionRepo {
       const { rows: transactionRow }: QueryResult<Omit<Transaction, "items">> =
         await this.req.pg.query<Omit<Transaction, "items">>(queryConfig);
 
+      console.log(transactionRow[0]);
       const values: any[] = [];
       const placeholders = data.items
-        .map(async (item, i) => {
+        .map((item, i) => {
           const baseIndex = i * 4;
 
           values.push(
@@ -40,22 +41,28 @@ export default class TranasctionRepo {
             item.quantity,
             item.signed_quantity
           );
-          return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${
-            baseIndex + 4
-          })`;
+          return `($${baseIndex + 1}::text, $${baseIndex + 2}::text, $${
+            baseIndex + 3
+          }::int, $${baseIndex + 4}::int)`;
         })
         .join(", ");
 
       const { rows: transactionItemRows } =
-        await this.req.pg.query<TransactionItem>(
-          `INSERT INTO packaging_transaction_items (packing_stock_id, packaging_transaction_id, quantity, signed_quantity) VALUES ${placeholders} RETURNING *`
-        );
+        await this.req.pg.query<TransactionItem>({
+          text: `INSERT INTO packaging_transaction_items (packaging_stock_id, packaging_transaction_id, quantity, signed_quantity) VALUES ${placeholders} RETURNING *`,
+          values,
+        });
 
       const result = { ...transactionRow[0], items: transactionItemRows };
 
       await this.req.pg.query({
-        text: "INSERT INTO packaging_transaction_audits (action_type,new_data) VALUES ($1::action_type,$2::json)",
-        values: ["CREATE", result],
+        text: "INSERT INTO packaging_transaction_audits (packaging_transaction_id, action_type, new_data, performed_by) VALUES ($1::text, $2::action_type, $3::json, $4::text);",
+        values: [
+          transactionRow[0].id,
+          "CREATE",
+          JSON.stringify(result),
+          data.performed_by,
+        ],
       });
 
       await this.req.pg.query("COMMIT");
@@ -64,7 +71,7 @@ export default class TranasctionRepo {
     } catch (error: unknown) {
       await this.req.pg.query("ROLLBACK");
       throw new CustomError({
-        message: `NoteRepo.create() method error: ${error}`,
+        message: `TransactionRepo.create() method error: ${error}`,
         statusCode: StatusCodes.BAD_REQUEST,
         statusText: "BAD_REQUEST",
       });

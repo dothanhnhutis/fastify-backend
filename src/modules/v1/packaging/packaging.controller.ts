@@ -12,7 +12,7 @@ export async function queryPackagingController(
   req: FastifyRequest,
   reply: FastifyReply
 ) {
-  const packagings = await req.packaging.findAll();
+  const packagings = await req.packagings.findAll();
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -26,7 +26,7 @@ export async function getPackagingByIdController(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packaging.findById(req.params.id);
+  const packaging = await req.packagings.findById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -40,7 +40,7 @@ export async function createPackagingController(
   req: FastifyRequest<{ Body: CreatePackagingType["body"] }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packaging.create(req.body);
+  const packaging = await req.packagings.create(req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -57,9 +57,9 @@ export async function updatePackagingByIdController(
   }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packaging.findById(req.params.id);
+  const packaging = await req.packagings.findById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
-  await req.packaging.update(packaging.id, req.body);
+  await req.packagings.update(packaging.id, req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -72,10 +72,10 @@ export async function deletePackagingByIdController(
   req: FastifyRequest<{ Params: DeletePackagingByIdType["params"] }>,
   reply: FastifyReply
 ) {
-  const packaging = await req.packaging.findById(req.params.id);
+  const packaging = await req.packagings.findById(req.params.id);
   if (!packaging) throw new BadRequestError("Bao bì không tồn tại.");
 
-  await req.warehouse.delete(packaging.id);
+  await req.warehouses.delete(packaging.id);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

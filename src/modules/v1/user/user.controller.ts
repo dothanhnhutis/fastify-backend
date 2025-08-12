@@ -21,7 +21,7 @@ export async function logoutUserController(
   reply: FastifyReply
 ) {
   if (req.sessionId) {
-    await req.session.delete(req.sessionId);
+    await req.sessions.delete(req.sessionId);
   }
 
   reply

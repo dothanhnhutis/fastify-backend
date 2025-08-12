@@ -21,14 +21,14 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
       const session = req.cookies.get(cookieName);
       if (!session) return;
       const sessionId = cryptoCookie.decrypt(session);
-      const sessionData = await req.session.findById(sessionId);
+      const sessionData = await req.sessions.findById(sessionId);
       if (!sessionData) return;
-      const user = await req.user.findById(sessionData.userId);
+      const user = await req.users.findById(sessionData.userId);
       if (!user) {
         res.clearCookie(config.SESSION_KEY_NAME);
       } else {
         req.sessionId = sessionId;
-        const refreshSession = await req.session.refresh(sessionId);
+        const refreshSession = await req.sessions.refresh(sessionId);
         req.currUser = user;
         if (refreshSession) {
           res.setCookie(

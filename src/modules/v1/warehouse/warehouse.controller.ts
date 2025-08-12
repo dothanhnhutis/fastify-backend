@@ -13,7 +13,7 @@ export async function queryWarehouseController(
   req: FastifyRequest<{ Params: GetWarehouseByIdType["params"] }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouse.findAll();
+  const warehouse = await req.warehouses.findAll();
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -28,7 +28,7 @@ export async function getWarehouseByIdController(
   req: FastifyRequest<{ Params: GetWarehouseByIdType["params"] }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouse.findById(req.params.id);
+  const warehouse = await req.warehouses.findById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -45,7 +45,7 @@ export async function createWarehouseController(
   }>,
   reply: FastifyReply
 ) {
-  const role = await req.warehouse.create(req.body);
+  const role = await req.warehouses.create(req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -63,10 +63,10 @@ export async function updateWarehouseByIdController(
   }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouse.findById(req.params.id);
+  const warehouse = await req.warehouses.findById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
 
-  await req.warehouse.update(warehouse.id, req.body);
+  await req.warehouses.update(warehouse.id, req.body);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -81,10 +81,10 @@ export async function deleteWarehouseByIdController(
   req: FastifyRequest<{ Params: DeleteWarehouseByIdType["params"] }>,
   reply: FastifyReply
 ) {
-  const warehouse = await req.warehouse.findById(req.params.id);
+  const warehouse = await req.warehouses.findById(req.params.id);
   if (!warehouse) throw new BadRequestError("Nhà kho không tồn tại.");
 
-  await req.warehouse.delete(warehouse.id);
+  await req.warehouses.delete(warehouse.id);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

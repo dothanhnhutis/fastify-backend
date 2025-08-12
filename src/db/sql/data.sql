@@ -182,7 +182,7 @@ UPDATE packaging_stocks
 SET quantity = (
         SELECT sum(signed_quantity)
         FROM packaging_transaction_items
-        WHERE packaging_stock_id = '70c26509-ab56-4c47-bcce-154a692b2d83'
+        WHERE packaging_stock_id = 'aac02c2b-f611-448c-884d-1e6946cec664'
     )
-WHERE id = '70c26509-ab56-4c47-bcce-154a692b2d83'
+WHERE id = 'aac02c2b-f611-448c-884d-1e6946cec664'
 RETURNING *;

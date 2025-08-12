@@ -14,7 +14,7 @@ export async function signInController(
   reply: FastifyReply
 ) {
   const { email, password } = req.body;
-  const user = await req.user.findByEmail(email);
+  const user = await req.users.findByEmail(email);
   if (
     !user ||
     !user.password_hash ||
@@ -22,7 +22,7 @@ export async function signInController(
   )
     throw new BadRequestError("Email và mật khẩu không hợp lệ.");
 
-  const session = await req.session.create({
+  const session = await req.sessions.create({
     userId: user.id,
     ip: req.ip || req.ips?.[0] || "",
     provider: "credential",

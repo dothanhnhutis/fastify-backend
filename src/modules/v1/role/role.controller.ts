@@ -12,7 +12,7 @@ export async function createRoleController(
   req: FastifyRequest<{ Body: CreateRoleType["body"] }>,
   reply: FastifyReply
 ) {
-  const role = await req.role.create(req.body);
+  const role = await req.roles.create(req.body);
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
     statusText: "OK",
@@ -27,7 +27,7 @@ export async function findRoleByIdController(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const role = await req.role.findById(req.params.id);
+  const role = await req.roles.findById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
   reply.code(StatusCodes.OK).send({
@@ -45,7 +45,7 @@ export async function queryRoleController(
   }>,
   reply: FastifyReply
 ) {
-  const data = await req.role.query(req.query);
+  const data = await req.roles.query(req.query);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -61,10 +61,10 @@ export async function updateRoleByIdController(
   }>,
   reply: FastifyReply
 ) {
-  const role = await req.role.findById(req.params.id);
+  const role = await req.roles.findById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
-  await req.role.update(role.id, req.body);
+  await req.roles.update(role.id, req.body);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,
@@ -79,10 +79,10 @@ export async function deleteRoleByIdController(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply
 ) {
-  const role = await req.role.findById(req.params.id);
+  const role = await req.roles.findById(req.params.id);
   if (!role) throw new BadRequestError("Vai trò không tồn tại.");
 
-  await req.role.delete(role.id);
+  await req.roles.delete(role.id);
 
   reply.code(StatusCodes.OK).send({
     statusCode: StatusCodes.OK,

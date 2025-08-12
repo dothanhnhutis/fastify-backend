@@ -37,6 +37,6 @@ declare module "fastify" {
     };
   }
   interface FastifyRequest {
-    session: SessionRepo;
+    sessions: SessionRepo;
   }
 }

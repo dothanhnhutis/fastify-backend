@@ -8,7 +8,7 @@ export async function getSessionsController(
   reply: FastifyReply
 ) {
   const { id } = req.currUser!;
-  const sessions = await req.session.findByUserId(id);
+  const sessions = await req.sessions.findByUserId(id);
 
   reply.code(StatusCodes.OK).send({
     statusCodes: StatusCodes.OK,
@@ -27,7 +27,7 @@ export async function deleteSessionsByIdController(
   const { id: userId } = req.currUser!;
 
   const sessionId = `${config.SESSION_KEY_NAME}:${userId}:${id}`;
-  const session = await req.session.findById(sessionId);
+  const session = await req.sessions.findById(sessionId);
 
   if (!session || session.userId != userId)
     throw new BadRequestError("Phiên không tồn tại");
@@ -35,7 +35,7 @@ export async function deleteSessionsByIdController(
   if (sessionId == req.sessionId)
     throw new BadRequestError("Không thể xoá phiên hiện tại");
 
-  await req.session.delete(sessionId);
+  await req.sessions.delete(sessionId);
 
   reply.code(StatusCodes.OK).send({
     data: { message: "Xoá phiên thành công" },

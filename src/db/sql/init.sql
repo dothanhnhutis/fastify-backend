@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS packaging_transaction_audits (
     id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
     packaging_transaction_id TEXT NOT NULL,
     action_type action_type NOT NULL,
-    old_data JSON,
-    new_data JSON,
+    old_data JSONB,
+    new_data JSONB,
     performed_by TEXT NOT NULL,
     performed_at TIMESTAMP(3) NOT NULL DEFAULT now(),
     CONSTRAINT packaging_transaction_audits_pkey PRIMARY KEY (id)
@@ -151,33 +151,26 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_create_packaging_stocks_for_packaging
 AFTER
 INSERT ON packagings FOR EACH ROW EXECUTE FUNCTION create_packaging_stocks_for_new_packaging();
---- test
--- CREATE OR REPLACE FUNCTION update_packaging_stock() RETURNS TRIGGER AS $$ BEGIN
--- UPDATE packaging_stocks
--- SET quantity = (
---         SELECT sum(signed_quantity)
---         FROM packaging_transaction_items
---         WHERE packaging_stock_id = OLD.packaging_stock_id;
---     )
--- WHERE id = OLD.packaging_stock_id
--- END;
--- $$ LANGUAGE plpgsql;
--- ---
--- CREATE TRIGGER trg_update_packaging_stocks_quantity
--- AFTER
--- INSERT OR UPDATE OR DELETE ON packaging_transactions FOR EACH ROW EXECUTE FUNCTION update_packaging_stock();
-CREATE OR REPLACE FUNCTION update_packaging_stock() RETURNS TRIGGER AS $$ BEGIN
+---
+CREATE OR REPLACE FUNCTION update_packaging_stock() RETURNS TRIGGER AS $$
+DECLARE p_stock_id TEXT;
+BEGIN IF TG_OP = 'DELETE' THEN p_stock_id := OLD.packaging_stock_id;
+ELSE p_stock_id := NEW.packaging_stock_id;
+END IF;
 UPDATE packaging_stocks
 SET quantity = (
         SELECT COALESCE(SUM(signed_quantity), 0)
         FROM packaging_transaction_items
-        WHERE packaging_stock_id = OLD.packaging_stock_id
+        WHERE packaging_stock_id = p_stock_id
     )
-WHERE id = OLD.packaging_stock_id;
-RETURN NULL;
--- hoặc RETURN OLD nếu cần
+WHERE id = p_stock_id;
+IF TG_OP = 'DELETE' THEN RETURN OLD;
+ELSE RETURN NEW;
+END IF;
 END;
 $$ LANGUAGE plpgsql;
+--
+-- DROP TRIGGER trg_update_packaging_stocks_quantity ON packaging_transaction_items;
 CREATE TRIGGER trg_update_packaging_stocks_quantity
 AFTER
 INSERT

@@ -1057,7 +1057,7 @@ async function redisCache(
   fastify.addHook("onRequest", async (req) => {
     // Create session with error handling
     try {
-      req.session = new SessionRepo(fastify);
+      req.sessions = new SessionRepo(fastify);
     } catch (error) {
       fastify.logger.error("Failed to create session", { error });
       throw new CustomError({

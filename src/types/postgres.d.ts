@@ -1,8 +1,11 @@
+import { Pool, PoolClient } from "pg";
+
 import RoleRepo from "@/db/repositories/role.repo";
 import UserRepo from "@/db/repositories/user.repo";
 import WarehouseRepo from "@/db/repositories/warehouse.repo";
 import PackagingRepo from "@/db/repositories/packaging.repo";
-import { Pool, PoolClient } from "pg";
+import PackagingStockRepo from "@/db/repositories/packaging_stock.repo";
+import TransactionRepo from "@/db/repositories/transaction.repo";
 
 // Extend Fastify types để include custom logger
 declare module "fastify" {
@@ -12,9 +15,11 @@ declare module "fastify" {
 
   interface FastifyRequest {
     pg: PoolClient;
-    user: UserRepo;
-    role: RoleRepo;
-    warehouse: WarehouseRepo;
-    packaging: PackagingRepo;
+    users: UserRepo;
+    roles: RoleRepo;
+    warehouses: WarehouseRepo;
+    packagings: PackagingRepo;
+    packaging_stocks: PackagingStockRepo;
+    transactions: TransactionRepo;
   }
 }

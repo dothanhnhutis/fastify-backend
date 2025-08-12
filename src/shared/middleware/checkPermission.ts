@@ -7,7 +7,7 @@ export default function checkPermissionMiddleware(permissions: string[]) {
     reply: FastifyReply
   ) => {
     if (!req.currUser) throw new PermissionError();
-    const roles = await req.user.findRoles(req.currUser.id);
+    const roles = await req.users.findRoles(req.currUser.id);
     const pers: string[] = Array.from(
       new Set(roles.flatMap(({ permissions }) => permissions))
     );
