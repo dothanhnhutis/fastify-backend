@@ -11,7 +11,17 @@ export async function queryUserController(
 export async function createUserController(
   req: FastifyRequest,
   reply: FastifyReply
-) {}
+) {
+  const newUser = await req.users.create(req.body);
+  reply.code(StatusCodes.CREATED).send({
+    statusCode: StatusCodes.OK,
+    statusText: "CREATED",
+    data: {
+      message: "Tạo người dùng thành công.",
+      newUser,
+    },
+  });
+}
 
 export async function currentUserController(
   req: FastifyRequest,

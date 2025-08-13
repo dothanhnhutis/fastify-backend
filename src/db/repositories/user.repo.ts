@@ -55,4 +55,21 @@ export default class UserRepo {
       return [];
     }
   }
+
+  async create(data: { email: string }) {
+    const queryConfig: QueryConfig = {
+      text: `SELECT * FROM roles WHERE id IN (SELECT role_id FROM user_roles WHERE user_id = $1);`,
+      values: [userId],
+    };
+    try {
+      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
+      return rows ?? null;
+    } catch (err: unknown) {
+      this.req.logger.error(
+        { metadata: { query: queryConfig } },
+        `UserRepo.findRoles() method error: ${err}`
+      );
+      return [];
+    }
+  }
 }

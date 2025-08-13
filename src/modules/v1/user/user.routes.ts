@@ -13,7 +13,10 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/",
     {
-      preHandler: [requiredAuthMiddleware, checkPermissionMiddleware([])],
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["get:user:*"]),
+      ],
     },
     queryUserController
   );
@@ -21,7 +24,10 @@ export default async function userRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/",
     {
-      preHandler: [requiredAuthMiddleware, checkPermissionMiddleware([])],
+      preHandler: [
+        requiredAuthMiddleware,
+        checkPermissionMiddleware(["create:user"]),
+      ],
     },
     createUserController
   );
