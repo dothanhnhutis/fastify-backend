@@ -2,6 +2,8 @@ import { StatusCodes } from "http-status-codes";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 import config from "@/shared/config";
+import { CreateUserType } from "./user.schema";
+import Password from "@/shared/password";
 
 export async function queryUserController(
   req: FastifyRequest,
@@ -9,10 +11,16 @@ export async function queryUserController(
 ) {}
 
 export async function createUserController(
-  req: FastifyRequest,
+  req: FastifyRequest<{ Body: CreateUserType["body"] }>,
   reply: FastifyReply
 ) {
-  const newUser = await req.users.create(req.body);
+  const password = Password.generate();
+  const password_hash = await Password.hash(password);
+  const newUser = await req.users.create({
+    ...req.body,
+    password_hash,
+  });
+
   reply.code(StatusCodes.CREATED).send({
     statusCode: StatusCodes.OK,
     statusText: "CREATED",

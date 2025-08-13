@@ -1,3 +1,4 @@
+import Password from "@/shared/password";
 import { FastifyRequest } from "fastify";
 import { QueryConfig, QueryResult } from "pg";
 
@@ -56,20 +57,24 @@ export default class UserRepo {
     }
   }
 
-  async create(data: { email: string }) {
+  async create(data: {
+    email: string;
+    username: string;
+    password_hash: string;
+  }) {
     const queryConfig: QueryConfig = {
-      text: `SELECT * FROM roles WHERE id IN (SELECT role_id FROM user_roles WHERE user_id = $1);`,
-      values: [userId],
+      text: `INSERT INTO user (email, username, password_hash) VALUES ($1, $2, $3) RETURNING *;`,
+      values: [data.email, data.username, data.password_hash],
     };
+
     try {
-      const { rows }: QueryResult<Role> = await this.req.pg.query(queryConfig);
-      return rows ?? null;
+      const { rows }: QueryResult<User> = await this.req.pg.query(queryConfig);
+      return rows[0] ?? null;
     } catch (err: unknown) {
       this.req.logger.error(
         { metadata: { query: queryConfig } },
-        `UserRepo.findRoles() method error: ${err}`
+        `UserRepo.create() method error: ${err}`
       );
-      return [];
     }
   }
 }

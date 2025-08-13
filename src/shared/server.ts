@@ -10,6 +10,8 @@ import postgresDBPlugin from "./plugins/postgres";
 import redisPlugin from "./plugins/redis";
 import cookiePlugin from "./plugins/cookie";
 import sessionPlugin from "./plugins/session";
+import amqpPlugin from "./plugins/amqp";
+
 import { errorHandler } from "./error-handler";
 
 export async function buildServer() {
@@ -37,7 +39,8 @@ export async function buildServer() {
       serviceName: "my-api-service",
     })
     .register(postgresDBPlugin)
-    .register(redisPlugin, { url: config.REDIS_URL });
+    .register(redisPlugin, { url: config.REDIS_URL })
+    .register(amqpPlugin, { connectOpts: config.RABBITMQ_URL });
 
   fastify.register(cookiePlugin, {
     httpOnly: true,
