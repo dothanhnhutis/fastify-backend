@@ -4,5 +4,6 @@ declare module "fastify" {
   interface FastifyRequest {
     currUser: User | null;
     sessionId: string | null;
+    userRoles: Role[];
   }
 }

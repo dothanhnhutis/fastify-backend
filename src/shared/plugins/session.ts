@@ -12,8 +12,9 @@ interface SessionOptions {
 async function session(fastify: FastifyInstance, options: SessionOptions) {
   const { cookieName = "sid", secret } = options;
 
-  fastify.decorate("user");
+  fastify.decorateRequest("currUser", null);
   fastify.decorateRequest("sessionId", null);
+  fastify.decorateRequest("userRoles");
 
   fastify.addHook(
     "onRequest",
@@ -30,6 +31,8 @@ async function session(fastify: FastifyInstance, options: SessionOptions) {
         req.sessionId = sessionId;
         const refreshSession = await req.sessions.refresh(sessionId);
         req.currUser = user;
+        req.userRoles = await req.users.findRoles(user.id);
+
         if (refreshSession) {
           res.setCookie(
             config.SESSION_KEY_NAME,

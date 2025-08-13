@@ -1,6 +1,17 @@
-import config from "@/shared/config";
-import { FastifyReply, FastifyRequest } from "fastify";
 import { StatusCodes } from "http-status-codes";
+import { FastifyReply, FastifyRequest } from "fastify";
+
+import config from "@/shared/config";
+
+export async function queryUserController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {}
+
+export async function createUserController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {}
 
 export async function currentUserController(
   req: FastifyRequest,
@@ -12,6 +23,19 @@ export async function currentUserController(
     statusText: "OK",
     data: {
       currentUser: currentUser,
+    },
+  });
+}
+
+export async function userRolesController(
+  req: FastifyRequest,
+  reply: FastifyReply
+) {
+  reply.code(StatusCodes.OK).send({
+    statusCode: StatusCodes.OK,
+    statusText: "OK",
+    data: {
+      userRole: req.userRoles,
     },
   });
 }
