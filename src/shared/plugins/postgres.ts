@@ -133,7 +133,6 @@ async function postgresDB(
       if (reconnectAttempts === 0) {
         reconnect();
       }
-    } finally {
     }
   });
 

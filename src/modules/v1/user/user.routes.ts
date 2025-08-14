@@ -8,6 +8,8 @@ import {
 } from "./user.controller";
 import requiredAuthMiddleware from "@/shared/middleware/requiredAuth";
 import checkPermissionMiddleware from "@/shared/middleware/checkPermission";
+import validateResource from "@/shared/middleware/validateResource";
+import { createUserSchema1 } from "./user.schema";
 
 export default async function userRoutes(fastify: FastifyInstance) {
   fastify.get(
@@ -26,7 +28,8 @@ export default async function userRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requiredAuthMiddleware,
-        checkPermissionMiddleware(["create:user"]),
+        // checkPermissionMiddleware(["create:user"]),
+        validateResource(createUserSchema1),
       ],
     },
     createUserController

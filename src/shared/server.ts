@@ -38,9 +38,12 @@ export async function buildServer() {
       level: "info",
       serviceName: "my-api-service",
     })
-    .register(postgresDBPlugin)
-    .register(redisPlugin, { url: config.REDIS_URL })
-    .register(amqpPlugin, { connectOpts: config.RABBITMQ_URL });
+    .register(postgresDBPlugin);
+  // .register(redisPlugin, { url: config.REDIS_URL });
+  // .register(amqpPlugin, {
+  //   connectOpts: config.RABBITMQ_URL,
+  //   maxReconnectAttempts: 5,
+  // });
 
   fastify.register(cookiePlugin, {
     httpOnly: true,

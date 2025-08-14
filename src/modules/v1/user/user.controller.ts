@@ -4,6 +4,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import config from "@/shared/config";
 import { CreateUserType } from "./user.schema";
 import Password from "@/shared/password";
+import { BadRequestError } from "@/shared/error-handler";
 
 export async function queryUserController(
   req: FastifyRequest,
@@ -14,8 +15,19 @@ export async function createUserController(
   req: FastifyRequest<{ Body: CreateUserType["body"] }>,
   reply: FastifyReply
 ) {
+  const existsUser = await req.users.findByEmail(req.body.email);
+  if (existsUser) throw new BadRequestError("Email đã tồn tại.");
+
+  if (req.body.roles) {
+    for (let id of req.body.roles) {
+      const role = await req.roles.findById(id);
+      if (role) throw new BadRequestError(`Quyền id=${id} không tồn tại.`);
+    }
+  }
+
   const password = Password.generate();
   const password_hash = await Password.hash(password);
+  console.log({ ...req.body, password });
   const newUser = await req.users.create({
     ...req.body,
     password_hash,
